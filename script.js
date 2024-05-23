@@ -16,6 +16,8 @@ for (let day = startDate; day <= new Date(year, month + 1, 0).getDate(); day++) 
 }
 
 let currentCanvasIndex = 0;
+let typingTimer;
+const typingDelay = 1000; // 1 second delay
 
 // Load canvases from localStorage or initialize them
 const canvases = canvasKeys.map(key => localStorage.getItem(key) || '');
@@ -42,8 +44,7 @@ function translateText(text) {
         .replace(/;/g, 'æ')
         .replace(/'/g, 'ø')
         .replace(/\[/g, 'å')
-        .replace(/,/g, '.')
-        .replace(/\./g, ',');
+        .replace(/\b(\d{2})(\d{2})\b/g, '$1.$2'); // Format times like 1200 to 12.00
 }
 
 // Event listener for keydown events
@@ -61,19 +62,23 @@ document.addEventListener('keydown', (e) => {
 
 // Event listener for input events to handle text translation and saving
 editor.addEventListener('input', () => {
-    const translatedText = translateText(editor.innerText);
-    if (translatedText !== editor.innerText) {
-        const cursorPosition = window.getSelection().getRangeAt(0).startOffset;
-        editor.innerText = translatedText;
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.setStart(editor.childNodes[0], cursorPosition);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-    saveCurrentCanvas();
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        const translatedText = translateText(editor.innerText);
+        if (translatedText !== editor.innerText) {
+            const cursorPosition = window.getSelection().getRangeAt(0).startOffset;
+            editor.innerText = translatedText;
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(editor.childNodes[0], cursorPosition);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+        saveCurrentCanvas();
+    }, typingDelay);
 });
 
 // Initialize the editor with the first canvas content
 updateEditor();
+
