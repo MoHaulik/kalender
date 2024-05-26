@@ -15,7 +15,7 @@ for (let day = startDate; day <= new Date(year, month + 1, 0).getDate(); day++) 
     canvasKeys.push(`canvas${day}`);
 }
 
-let currentCanvasIndex = 0;
+let currentCanvasIndex;
 let typingTimer;
 const typingDelay = 1000; // 1 second delay
 
@@ -47,16 +47,40 @@ function translateText(text) {
         .replace(/\b(\d{2})(\d{2})\b/g, '$1.$2'); // Format times like 1200 to 12.00
 }
 
+// Function to set the current canvas index based on the current date
+function setCurrentCanvasIndex() {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDate = today.getDate();
+
+    if (currentYear === year && currentMonth === month && currentDate >= startDate) {
+        currentCanvasIndex = currentDate - startDate;
+    } else {
+        currentCanvasIndex = 0; // Default to the first canvas if the current date is not in the range
+    }
+}
+
+// Function to handle navigation to the previous canvas
+function showPreviousCanvas() {
+    saveCurrentCanvas();
+    currentCanvasIndex = (currentCanvasIndex === 0) ? canvases.length - 1 : currentCanvasIndex - 1;
+    updateEditor();
+}
+
+// Function to handle navigation to the next canvas
+function showNextCanvas() {
+    saveCurrentCanvas();
+    currentCanvasIndex = (currentCanvasIndex === canvases.length - 1) ? 0 : currentCanvasIndex + 1;
+    updateEditor();
+}
+
 // Event listener for keydown events
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        saveCurrentCanvas();
-        if (e.key === 'ArrowLeft') {
-            currentCanvasIndex = (currentCanvasIndex === 0) ? canvases.length - 1 : currentCanvasIndex - 1;
-        } else if (e.key === 'ArrowRight') {
-            currentCanvasIndex = (currentCanvasIndex === canvases.length - 1) ? 0 : currentCanvasIndex + 1;
-        }
-        updateEditor();
+    if (e.key === 'ArrowLeft') {
+        showPreviousCanvas();
+    } else if (e.key === 'ArrowRight') {
+        showNextCanvas();
     }
 });
 
@@ -79,5 +103,10 @@ editor.addEventListener('input', () => {
     }, typingDelay);
 });
 
-// Initialize the editor with the first canvas content
+// Event listeners for click events on date and day-name elements
+dateElement.addEventListener('click', showPreviousCanvas);
+dayNameElement.addEventListener('click', showNextCanvas);
+
+// Initialize the editor with the correct canvas content based on the current date
+setCurrentCanvasIndex();
 updateEditor();
