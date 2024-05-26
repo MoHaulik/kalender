@@ -15,10 +15,10 @@ body {
     width: 80%;
     display: flex;
     justify-content: space-between;
-    align-items: center; /* Align items vertically center */
+    align-items: flex-start; /* Align items to the top */
     padding: 10px;
     box-sizing: border-box;
-    position: absolute;
+    position: relative;
     top: 0;
 }
 
@@ -29,16 +29,17 @@ body {
 #date, #day-name, #month-name {
     font-size: 24px; /* Match the font size of the original text editor */
     margin: 0;
+    line-height: 1; /* Adjust line height to match the text editor */
 }
 
 #editor {
     width: 80%;
-    height: calc(100% - 80px); /* Adjust height to leave space for header */
+    height: calc(100% - 40px); /* Adjust height to leave space for header */
     border: none;
     outline: none;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-y: auto;
-    margin-top: 80px; /* Leave space for the header */
+    margin-top: 0; /* No additional margin-top */
     box-sizing: border-box;
 }
