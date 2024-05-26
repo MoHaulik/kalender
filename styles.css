@@ -15,8 +15,11 @@ body {
     width: 80%;
     display: flex;
     justify-content: space-between;
+    align-items: center; /* Align items vertically center */
     padding: 10px;
     box-sizing: border-box;
+    position: absolute;
+    top: 0;
 }
 
 #date-container {
@@ -30,12 +33,12 @@ body {
 
 #editor {
     width: 80%;
-    height: 80%;
+    height: calc(100% - 80px); /* Adjust height to leave space for header */
     border: none;
     outline: none;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-y: auto;
-    margin-top: 20px;
+    margin-top: 80px; /* Leave space for the header */
     box-sizing: border-box;
 }
