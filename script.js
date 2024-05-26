@@ -81,4 +81,3 @@ editor.addEventListener('input', () => {
 
 // Initialize the editor with the first canvas content
 updateEditor();
-
