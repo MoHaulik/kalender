@@ -3,7 +3,7 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     background-color: black;
     color: white;
@@ -15,7 +15,7 @@ body {
     width: 80%;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Align items to the top */
+    align-items: flex-start;
     padding: 10px;
     box-sizing: border-box;
     position: relative;
@@ -27,9 +27,9 @@ body {
 }
 
 #date, #day-name, #month-name {
-    font-size: 24px; /* Match the font size of the original text editor */
+    font-size: 24px;
     margin: 0;
-    line-height: 1; /* Adjust line height to match the text editor */
+    line-height: 1.2; /* Adjust line height to match text editor */
 }
 
 #editor {
