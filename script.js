@@ -1,13 +1,5 @@
-const editor = document.getElementById('editor');
-const dayNameElement = document.getElementById('day-name');
-const dateElement = document.getElementById('date');
-const monthNameElement = document.getElementById('month-name');
-
-const danishDays = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
-const danishMonths = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
-
-const startDate = 22;
-const month = 4; // May (0-based index)
+const startDate = 1;
+const month = 5; // June (0-based index)
 const year = new Date().getFullYear();
 
 const canvasKeys = [];
