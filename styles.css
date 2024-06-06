@@ -42,4 +42,5 @@ body {
     overflow-y: auto;
     margin-top: 0; /* No additional margin-top */
     box-sizing: border-box;
+    font-size: 26px; /* Slightly larger font size for editor text */
 }
