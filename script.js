@@ -6,82 +6,88 @@ const monthNameElement = document.getElementById('month-name');
 const danishDays = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
 const danishMonths = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
 
-const startDate = 1;
-const month = 5; // June (0-based index)
-const year = new Date().getFullYear();
+const startDate = 6; // August 6
+const startMonth = 7; // August (0-based index)
+const endMonth = 8; // September (0-based index)
+const year = 2024;
 
 const canvasKeys = [];
-for (let day = startDate; day <= new Date(year, month + 1, 0).getDate(); day++) {
-    canvasKeys.push(`canvas${day}`);
+let totalDays = 0;
+
+for (let month = startMonth; month <= endMonth; month++) {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startDay = month === startMonth ? startDate : 1;
+    for (let day = startDay; day <= daysInMonth; day++) {
+        canvasKeys.push(`canvas${year}${(month + 1).toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`);
+        totalDays++;
+    }
 }
 
-let currentCanvasIndex;
+let currentCanvasIndex = 0;
 let typingTimer;
 const typingDelay = 1000; // 1 second delay
 const clickableDelay = 10000; // 10 seconds delay
 
-const hoverSound = new Audio('Hover.wav'); // Add sound effect for navigation
-const clickSound = new Audio('click.mp3'); // Add sound effect for clicking text
+const hoverSound = new Audio('Hover.wav');
+const clickSound = new Audio('click.mp3');
 
 // Load canvases from localStorage or initialize them
 const canvases = canvasKeys.map(key => localStorage.getItem(key) || '');
 
-// Function to update the editor with the current canvas content
 function updateEditor() {
-    const currentDay = startDate + currentCanvasIndex;
-    const date = new Date(year, month, currentDay);
+    let currentDay = startDate;
+    let currentMonth = startMonth;
+    for (let i = 0; i < currentCanvasIndex; i++) {
+        currentDay++;
+        if (currentDay > new Date(year, currentMonth + 1, 0).getDate()) {
+            currentDay = 1;
+            currentMonth++;
+        }
+    }
+    const date = new Date(year, currentMonth, currentDay);
     dayNameElement.innerText = danishDays[date.getDay()];
     dateElement.innerText = currentDay;
-    monthNameElement.innerText = danishMonths[month];
-    editor.innerHTML = canvases[currentCanvasIndex]; // Use innerHTML to preserve clickable spans
+    monthNameElement.innerText = danishMonths[currentMonth];
+    editor.innerHTML = canvases[currentCanvasIndex];
 }
 
-// Function to save the editor content to the current canvas
 function saveCurrentCanvas() {
     canvases[currentCanvasIndex] = editor.innerHTML;
     localStorage.setItem(canvasKeys[currentCanvasIndex], editor.innerHTML);
 }
 
-// Function to translate specific text patterns
 function translateText(text) {
     return text
         .replace(/;/g, 'æ')
         .replace(/'/g, 'ø')
         .replace(/\[/g, 'å')
-        .replace(/\b(\d{2})(\d{2})\b/g, '$1.$2'); // Format times like 1200 to 12.00
+        .replace(/\b(\d{2})(\d{2})\b/g, '$1.$2');
 }
 
-// Function to set the current canvas index based on the current date
 function setCurrentCanvasIndex() {
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const currentDate = today.getDate();
-
-    if (currentYear === year && currentMonth === month && currentDate >= startDate) {
-        currentCanvasIndex = currentDate - startDate;
+    if (today >= new Date(year, startMonth, startDate) && today <= new Date(year, endMonth + 1, 0)) {
+        const daysSinceStart = Math.floor((today - new Date(year, startMonth, startDate)) / (1000 * 60 * 60 * 24));
+        currentCanvasIndex = Math.min(daysSinceStart, totalDays - 1);
     } else {
-        currentCanvasIndex = 0; // Default to the first canvas if the current date is not in the range
+        currentCanvasIndex = 0;
     }
 }
 
-// Function to handle navigation to the previous canvas
 function showPreviousCanvas() {
     saveCurrentCanvas();
     currentCanvasIndex = (currentCanvasIndex === 0) ? canvases.length - 1 : currentCanvasIndex - 1;
-    hoverSound.play(); // Play sound effect
+    hoverSound.play();
     updateEditor();
 }
 
-// Function to handle navigation to the next canvas
 function showNextCanvas() {
     saveCurrentCanvas();
     currentCanvasIndex = (currentCanvasIndex === canvases.length - 1) ? 0 : currentCanvasIndex + 1;
-    hoverSound.play(); // Play sound effect
+    hoverSound.play();
     updateEditor();
 }
 
-// Function to make text clickable after 10 seconds
 function makeTextClickable() {
     const textNodes = editor.childNodes;
     textNodes.forEach(node => {
@@ -94,15 +100,13 @@ function makeTextClickable() {
     });
 }
 
-// Function to handle clicking on text
 function handleClick(event) {
     if (event.target.classList.contains('clickable')) {
         event.target.style.textDecoration = 'line-through';
-        clickSound.play(); // Play click sound effect
+        clickSound.play();
     }
 }
 
-// Event listener for keydown events
 document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') {
         showPreviousCanvas();
@@ -111,7 +115,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Event listener for input events to handle text translation and saving
 editor.addEventListener('input', () => {
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
@@ -127,17 +130,13 @@ editor.addEventListener('input', () => {
             sel.addRange(range);
         }
         saveCurrentCanvas();
-        setTimeout(makeTextClickable, clickableDelay); // Make text clickable after delay
+        setTimeout(makeTextClickable, clickableDelay);
     }, typingDelay);
 });
 
-// Event listeners for click events on date and day-name elements
 dateElement.addEventListener('click', showPreviousCanvas);
 dayNameElement.addEventListener('click', showNextCanvas);
-
-// Event listener for click events on editor text
 editor.addEventListener('click', handleClick);
 
-// Initialize the editor with the correct canvas content based on the current date
 setCurrentCanvasIndex();
 updateEditor();
