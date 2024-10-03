@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar</title>
+    <title>Calendar Editor</title>
     <style>
         body {
             margin: 0;
@@ -36,20 +36,20 @@
         #date, #day-name, #month-name {
             font-size: 24px;
             margin: 0;
-            line-height: 1.2;
+            line-height: 1.2; /* Adjust line height to match text editor */
         }
 
         #editor {
             width: 80%;
-            height: calc(100% - 40px);
+            height: calc(100% - 40px); /* Adjust height to leave space for header */
             border: none;
             outline: none;
             white-space: pre-wrap;
             word-wrap: break-word;
             overflow-y: auto;
-            margin-top: 0;
+            margin-top: 0; /* No additional margin-top */
             box-sizing: border-box;
-            font-size: 26px;
+            font-size: 26px; /* Slightly larger font size for editor text */
         }
     </style>
 </head>
@@ -83,7 +83,7 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const startDay = month === startMonth ? startDate : 1;
             for (let day = startDay; day <= daysInMonth; day++) {
-                canvasKeys.push(\`canvas\${year}\${(month + 1).toString().padStart(2, '0')}\${day.toString().padStart(2, '0')}\`);
+                canvasKeys.push(`canvas${year}${(month + 1).toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`);
                 totalDays++;
             }
         }
@@ -125,8 +125,8 @@
             return text
                 .replace(/;/g, 'æ')
                 .replace(/'/g, 'ø')
-                .replace(/\\[/g, 'å')
-                .replace(/\\b(\\d{2})(\\d{2})\\b/g, '$1.$2');
+                .replace(/\[/g, 'å')
+                .replace(/\b(\d{2})(\d{2})\b/g, '$1.$2');
         }
 
         function setCurrentCanvasIndex() {
