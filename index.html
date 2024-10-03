@@ -18,6 +18,8 @@
             align-items: center;
             background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
             overflow: hidden;
+            flex-direction: column;
+            gap: 20px; /* Space between calendar and the new box */
         }
 
         .calendar-container {
@@ -81,9 +83,49 @@
             text-decoration: underline;
         }
 
+        /* New Box Styling */
+        .avatar-box {
+            position: relative;
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            display: flex;
+            align-items: center;
+            border-radius: 20px;
+            gap: 15px; /* Space between avatar and text */
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .text-bubble {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 15px;
+            color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+            flex-grow: 1;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 480px) {
-            .calendar-container {
+            .calendar-container, .avatar-box {
                 width: 90%;
                 padding: 15px;
             }
@@ -94,6 +136,10 @@
 
             #editor {
                 font-size: 22px;
+            }
+
+            .text-bubble {
+                font-size: 16px;
             }
         }
     </style>
@@ -109,6 +155,17 @@
         </div>
         <div id="editor" contenteditable="true"></div>
     </div>
+
+    <!-- New Box for Avatar and Text Bubble -->
+    <div class="avatar-box" onclick="openChat()">
+        <div class="avatar">
+            <img src="Avatar.jpeg" alt="Avatar">
+        </div>
+        <div class="text-bubble" id="greeting-message">
+            <!-- Placeholder for text bubble content -->
+        </div>
+    </div>
+
     <script>
         const editor = document.getElementById('editor');
         const dayNameElement = document.getElementById('day-name');
@@ -219,6 +276,43 @@
             }
         }
 
+        function openChat() {
+            window.open('https://huggingface.co/chat/', '_blank');
+        }
+
+        // Select greeting message based on time of day
+        function selectGreeting() {
+            const morningMessages = [
+                "Morning, Mr. M! How about we kick things off with today’s game plan?",
+                "Good morning, Mr. M! Let’s set our sights on a productive day!"
+                // Add more morning messages here
+            ];
+            const afternoonMessages = [
+                "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
+                "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
+                // Add more afternoon messages here
+            ];
+            const eveningMessages = [
+                "Good evening, Mr. M! Shall we go over the day's accomplishments?",
+                "Hey Mr. M! Let’s recap and prep for tomorrow!"
+                // Add more evening messages here
+            ];
+
+            const now = new Date();
+            const hours = now.getHours();
+            let message;
+
+            if (hours >= 5 && hours < 12) { // Morning: 5 AM - 12 PM
+                message = morningMessages[Math.floor(Math.random() * morningMessages.length)];
+            } else if (hours >= 12 && hours < 18) { // Afternoon: 12 PM - 6 PM
+                message = afternoonMessages[Math.floor(Math.random() * afternoonMessages.length)];
+            } else { // Evening: 6 PM - 5 AM
+                message = eveningMessages[Math.floor(Math.random() * eveningMessages.length)];
+            }
+
+            document.getElementById('greeting-message').innerText = message;
+        }
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') {
                 showPreviousCanvas();
@@ -252,6 +346,7 @@
 
         setCurrentCanvasIndex();
         updateEditor();
+        selectGreeting(); // Set the greeting message based on the current time
     </script>
 </body>
 </html>
