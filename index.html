@@ -1,11 +1,11 @@
-´<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Calendar and Timer</title>
     <style>
-        /* Common Styles */
+        /* Shared Styles */
         body, html {
             margin: 0;
             padding: 0;
@@ -17,58 +17,24 @@
             flex-direction: column;
         }
 
-        .hidden {
-            display: none;
-        }
-
-        /* Navigation Button Styles */
-        .nav-button-container {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-        }
-
-        .nav-dot {
-            width: 12px;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .nav-dot.active {
-            background: rgba(255, 255, 255, 1);
-        }
-
-        /* Calendar Styles */
-        .calendar-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding-bottom: 60px; /* Space for navigation button */
-            transition: opacity 0.5s ease;
-        }
-
-        /* Timer Styles */
-        .timer-container {
+        .view-container {
             flex: 1;
             display: none; /* Hidden by default */
             justify-content: center;
             align-items: center;
+            flex-direction: column;
+            gap: 20px;
             position: relative;
-            padding-bottom: 60px; /* Space for navigation button */
-            transition: opacity 0.5s ease;
+            width: 100%;
+            height: 100%;
         }
 
-        /* Include all your existing Calendar and Timer CSS here */
-        /* Calendar CSS */
-        .calendar-inner {
+        .active-view {
+            display: flex; /* Show the active view */
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
             position: relative;
             width: 80%;
             max-width: 600px;
@@ -83,8 +49,139 @@
             color: rgba(0, 0, 0, 0.8);
         }
 
-        /* Timer CSS */
-        .timer-inner {
+        #header-calendar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        #date-container-calendar {
+            text-align: left;
+        }
+
+        #date-calendar, #day-name-calendar, #month-name-calendar {
+            font-size: 24px;
+            margin: 0;
+            line-height: 1.2;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #editor-calendar {
+            width: 100%;
+            height: calc(100% - 60px);
+            border: none;
+            outline: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+            margin-top: 10px;
+            box-sizing: border-box;
+            font-size: 26px;
+            background: transparent;
+            color: inherit;
+            padding: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .clickable {
+            cursor: pointer;
+            transition: text-decoration 0.3s ease, color 0.3s ease;
+        }
+
+        .clickable:hover {
+            text-decoration: underline;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            color: gray;
+            transition: text-decoration 0.3s ease, color 0.3s ease;
+        }
+
+        /* Avatar Box Styling */
+        .avatar-box {
+            position: relative;
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            display: flex;
+            align-items: center;
+            border-radius: 20px;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .text-bubble {
+            position: relative;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 15px;
+            color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+            flex-grow: 1;
+            transition: opacity 0.5s ease;
+            opacity: 1;
+        }
+
+        .text-bubble.hidden {
+            opacity: 0;
+        }
+
+        /* Fullscreen Button Styling */
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .fullscreen-button.visible {
+            opacity: 1;
+        }
+
+        /* Fullscreen Button Icon */
+        .fullscreen-button::before {
+            content: "\26F6";
+            font-size: 20px;
+            color: black;
+        }
+
+        /* Timer Styles */
+        .timer-container {
             position: relative;
             width: 300px;
             height: 300px;
@@ -97,50 +194,207 @@
             align-items: center;
         }
 
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .progress-ring circle {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 8;
+        }
+
+        .progress-ring .progress {
+            stroke: rgba(255, 255, 255, 0.8);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .connecting-circle {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .knob {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4));
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            position: absolute;
+            top: calc(50% - 30px);
+            left: calc(50% - 30px);
+            transition: box-shadow 0.3s ease;
+            z-index: 10;
+        }
+
+        .knob:hover {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .knob:active {
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.7);
+        }
+
+        .display {
+            font-size: 48px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 5;
+        }
+
+        .mode-indicators {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .mode-indicator {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .mode-indicator.active {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .mode-name {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Navigation Button Styles */
+        .nav-button-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .nav-button {
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .nav-button.active {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
         /* Responsive adjustments */
         @media (max-width: 480px) {
-            .calendar-inner, .timer-inner {
+            .calendar-container, .avatar-box {
                 width: 90%;
                 padding: 15px;
             }
-            /* Adjust Timer size */
-            .timer-inner {
+
+            #date-calendar, #day-name-calendar, #month-name-calendar {
+                font-size: 20px;
+            }
+
+            #editor-calendar {
+                font-size: 22px;
+            }
+
+            .text-bubble {
+                font-size: 16px;
+            }
+
+            .fullscreen-button {
+                width: 35px;
+                height: 35px;
+                top: 8px;
+                right: 8px;
+            }
+
+            .fullscreen-button::before {
+                font-size: 18px;
+            }
+
+            .timer-container {
                 width: 250px;
                 height: 250px;
+            }
+
+            .display {
+                font-size: 36px;
+            }
+
+            .mode-name {
+                font-size: 20px;
+            }
+
+            .knob {
+                width: 50px;
+                height: 50px;
+                top: calc(50% - 25px);
+                left: calc(50% - 25px);
+            }
+
+            .nav-button {
+                width: 12px;
+                height: 12px;
             }
         }
     </style>
 </head>
 <body>
-
-    <!-- Calendar Section -->
-    <div class="calendar-container" id="calendar-section">
-        <div class="calendar-inner">
-            <div id="header">
-                <div id="date-container">
-                    <div id="date"></div>
-                    <div id="month-name"></div>
+    <!-- Calendar View -->
+    <div class="view-container active-view" id="calendar-view">
+        <div class="calendar-container">
+            <div id="header-calendar">
+                <div id="date-container-calendar">
+                    <div id="date-calendar"></div>
+                    <div id="month-name-calendar"></div>
                 </div>
-                <div id="day-name"></div>
+                <div id="day-name-calendar"></div>
                 <!-- Fullscreen Button -->
-                <button class="fullscreen-button" id="fullscreen-btn" aria-label="Toggle Fullscreen"></button>
+                <button class="fullscreen-button" id="fullscreen-btn-calendar" aria-label="Toggle Fullscreen"></button>
             </div>
-            <div id="editor" contenteditable="true"></div>
-            <!-- New Box for Avatar and Text Bubble -->
-            <div class="avatar-box" onclick="openChat()">
-                <div class="avatar">
-                    <img src="Avatar.jpeg" alt="Avatar">
-                </div>
-                <div class="text-bubble" id="greeting-message">
-                    <!-- Placeholder for text bubble content -->
-                </div>
+            <div id="editor-calendar" contenteditable="true"></div>
+        </div>
+
+        <!-- Avatar Box for Calendar View -->
+        <div class="avatar-box" onclick="openChat()">
+            <div class="avatar">
+                <img src="Avatar.jpeg" alt="Avatar">
+            </div>
+            <div class="text-bubble" id="greeting-message-calendar">
+                <!-- Placeholder for text bubble content -->
             </div>
         </div>
     </div>
 
-    <!-- Timer Section -->
-    <div class="timer-container" id="timer-section">
-        <div class="timer-inner">
+    <!-- Timer View -->
+    <div class="view-container" id="timer-view">
+        <div class="timer-container">
             <svg class="progress-ring" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" />
                 <circle class="progress" cx="50" cy="50" r="45" />
@@ -159,682 +413,683 @@
 
     <!-- Navigation Buttons -->
     <div class="nav-button-container">
-        <div class="nav-dot active" id="nav-calendar" title="Calendar"></div>
-        <div class="nav-dot" id="nav-timer" title="Timer"></div>
+        <div class="nav-button active" id="btn-calendar" aria-label="Calendar View"></div>
+        <div class="nav-button" id="btn-timer" aria-label="Timer View"></div>
     </div>
 
-    <!-- Sound Effects for Calendar -->
-    <audio id="calendar-hover-sound" src="Hover.wav" preload="auto"></audio>
-    <audio id="calendar-click-sound" src="click.mp3" preload="auto"></audio>
-
-    <!-- Sound Effects for Timer -->
-    <audio id="timer-hover-sound" src="Hover.wav" preload="auto"></audio>
-    <audio id="timer-click-sound" src="click.mp3" preload="auto"></audio>
-    <audio id="alarm-sound" src="1.mp3" preload="auto"></audio>
-
+    <!-- Calendar View Scripts -->
     <script>
-        /* === Navigation Logic === */
-        const calendarSection = document.getElementById('calendar-section');
-        const timerSection = document.getElementById('timer-section');
-        const navCalendar = document.getElementById('nav-calendar');
-        const navTimer = document.getElementById('nav-timer');
+        // Calendar Variables
+        const editorCalendar = document.getElementById('editor-calendar');
+        const dayNameElementCalendar = document.getElementById('day-name-calendar');
+        const dateElementCalendar = document.getElementById('date-calendar');
+        const monthNameElementCalendar = document.getElementById('month-name-calendar');
+        const greetingMessageElementCalendar = document.getElementById('greeting-message-calendar');
 
-        function showCalendar() {
-            calendarSection.style.display = 'flex';
-            timerSection.style.display = 'none';
-            navCalendar.classList.add('active');
-            navTimer.classList.remove('active');
+        const fullscreenBtnCalendar = document.getElementById('fullscreen-btn-calendar');
+        const headerCalendar = document.getElementById('header-calendar');
+
+        let longPressTimerCalendar;
+        const longPressDurationCalendar = 500; // milliseconds
+
+        // Function to enter fullscreen
+        function enterFullscreenCalendar() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
         }
 
-        function showTimer() {
-            calendarSection.style.display = 'none';
-            timerSection.style.display = 'flex';
-            navTimer.classList.add('active');
-            navCalendar.classList.remove('active');
+        // Function to exit fullscreen
+        function exitFullscreenCalendar() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { /* Safari */
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { /* IE11 */
+                document.msExitFullscreen();
+            }
         }
 
-        navCalendar.addEventListener('click', showCalendar);
-        navTimer.addEventListener('click', showTimer);
+        // Toggle fullscreen mode
+        function toggleFullscreenCalendar() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                enterFullscreenCalendar();
+            } else {
+                exitFullscreenCalendar();
+            }
+        }
 
-        /* === Calendar JavaScript === */
-        (function() {
-            const editor = document.getElementById('editor');
-            const dayNameElement = document.getElementById('day-name');
-            const dateElement = document.getElementById('date');
-            const monthNameElement = document.getElementById('month-name');
-            const greetingMessageElement = document.getElementById('greeting-message');
+        // Show fullscreen button
+        function showFullscreenButtonCalendar() {
+            fullscreenBtnCalendar.classList.add('visible');
+        }
 
-            const fullscreenBtn = document.getElementById('fullscreen-btn');
-            const header = document.getElementById('header');
+        // Hide fullscreen button
+        function hideFullscreenButtonCalendar() {
+            fullscreenBtnCalendar.classList.remove('visible');
+        }
 
-            const hoverSound = document.getElementById('calendar-hover-sound');
-            const clickSound = document.getElementById('calendar-click-sound');
+        // Event listeners for long press on header
+        headerCalendar.addEventListener('touchstart', (e) => {
+            // Start the timer
+            longPressTimerCalendar = setTimeout(() => {
+                showFullscreenButtonCalendar();
+            }, longPressDurationCalendar);
+        });
 
-            let longPressTimer;
-            const longPressDuration = 500; // milliseconds
+        headerCalendar.addEventListener('touchend', (e) => {
+            // Clear the timer
+            clearTimeout(longPressTimerCalendar);
+        });
 
-            // Function to enter fullscreen
-            function enterFullscreen() {
-                const elem = document.documentElement;
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen();
-                } else if (elem.webkitRequestFullscreen) { /* Safari */
-                    elem.webkitRequestFullscreen();
-                } else if (elem.msRequestFullscreen) { /* IE11 */
-                    elem.msRequestFullscreen();
+        headerCalendar.addEventListener('touchmove', (e) => {
+            // If user moves finger, cancel the long press
+            clearTimeout(longPressTimerCalendar);
+        });
+
+        // Hide fullscreen button when tapping outside
+        document.addEventListener('touchstart', (e) => {
+            if (!fullscreenBtnCalendar.contains(e.target) && !headerCalendar.contains(e.target)) {
+                hideFullscreenButtonCalendar();
+            }
+        });
+
+        // Click event for fullscreen button
+        fullscreenBtnCalendar.addEventListener('click', () => {
+            toggleFullscreenCalendar();
+            hideFullscreenButtonCalendar();
+        });
+
+        // Existing JavaScript code for Calendar...
+        const danishDaysCalendar = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+        const danishMonthsCalendar = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
+
+        const startDateCalendar = 3; // October 3
+        const startMonthCalendar = 9; // October (0-based index)
+        const endMonthCalendar = 11; // December (0-based index)
+        const yearCalendar = 2024;
+
+        const canvasKeysCalendar = [];
+        let totalDaysCalendar = 0;
+
+        for (let month = startMonthCalendar; month <= endMonthCalendar; month++) {
+            const daysInMonth = new Date(yearCalendar, month + 1, 0).getDate();
+            const startDay = month === startMonthCalendar ? startDateCalendar : 1;
+            for (let day = startDay; day <= daysInMonth; day++) {
+                canvasKeysCalendar.push(`canvas${yearCalendar}${(month + 1).toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`);
+                totalDaysCalendar++;
+            }
+        }
+
+        let currentCanvasIndexCalendar = 0;
+
+        const hoverSoundCalendar = new Audio('Hover.wav');
+        const clickSoundCalendar = new Audio('click.mp3');
+
+        // Load canvases from localStorage or initialize them
+        const canvasesCalendar = canvasKeysCalendar.map(key => localStorage.getItem(key) || '');
+
+        // Load messages from messages.json
+        let greetingsCalendar = {
+            morning: [],
+            afternoon: [],
+            evening: []
+        };
+        let congratulatoryMessagesCalendar = [];
+
+        fetch('messages.json')
+            .then(response => response.json())
+            .then(data => {
+                greetingsCalendar = data.greetings;
+                congratulatoryMessagesCalendar = data.congratulations;
+                // After loading messages, set the initial greeting
+                selectGreetingCalendar();
+            })
+            .catch(error => {
+                console.error('Error fetching messages:', error);
+                // Fallback greeting messages in case of error
+                greetingsCalendar.morning = [
+                    "Morning, Mr. M! How about we kick things off with today’s game plan?",
+                    "Good morning, Mr. M! Let’s set our sights on a productive day!"
+                ];
+                greetingsCalendar.afternoon = [
+                    "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
+                    "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
+                ];
+                greetingsCalendar.evening = [
+                    "Good evening, Mr. M! Shall we go over the day's accomplishments?",
+                    "Hey Mr. M! Let’s recap and prep for tomorrow!"
+                ];
+                selectGreetingCalendar();
+            });
+
+        function updateEditorCalendar() {
+            let currentDay = startDateCalendar;
+            let currentMonth = startMonthCalendar;
+            for (let i = 0; i < currentCanvasIndexCalendar; i++) {
+                currentDay++;
+                if (currentDay > new Date(yearCalendar, currentMonth + 1, 0).getDate()) {
+                    currentDay = 1;
+                    currentMonth++;
                 }
             }
+            const date = new Date(yearCalendar, currentMonth, currentDay);
+            dayNameElementCalendar.innerText = danishDaysCalendar[date.getDay()];
+            dateElementCalendar.innerText = currentDay;
+            monthNameElementCalendar.innerText = danishMonthsCalendar[currentMonth];
+            editorCalendar.innerHTML = canvasesCalendar[currentCanvasIndexCalendar];
+        }
 
-            // Function to exit fullscreen
-            function exitFullscreen() {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { /* Safari */
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { /* IE11 */
-                    document.msExitFullscreen();
-                }
+        function saveCurrentCanvasCalendar() {
+            canvasesCalendar[currentCanvasIndexCalendar] = editorCalendar.innerHTML;
+            localStorage.setItem(canvasKeysCalendar[currentCanvasIndexCalendar], editorCalendar.innerHTML);
+        }
+
+        function translateTextCalendar(text) {
+            // Adjusted translation to avoid interfering with '.'
+            return text
+                .replace(/;/g, 'æ')
+                .replace(/'/g, 'ø')
+                .replace(/\[/g, 'å');
+                // Removed the regex that replaces two digits with a dot
+        }
+
+        function setCurrentCanvasIndexCalendar() {
+            const today = new Date();
+            if (today >= new Date(yearCalendar, startMonthCalendar, startDateCalendar) && today <= new Date(yearCalendar, endMonthCalendar + 1, 0)) {
+                const daysSinceStart = Math.floor((today - new Date(yearCalendar, startMonthCalendar, startDateCalendar)) / (1000 * 60 * 60 * 24));
+                currentCanvasIndexCalendar = Math.min(daysSinceStart, totalDaysCalendar - 1);
+            } else {
+                currentCanvasIndexCalendar = 0;
             }
+        }
 
-            // Toggle fullscreen mode
-            function toggleFullscreen() {
-                if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                    enterFullscreen();
+        function showPreviousCanvasCalendar() {
+            saveCurrentCanvasCalendar();
+            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === 0) ? canvasesCalendar.length - 1 : currentCanvasIndexCalendar - 1;
+            hoverSoundCalendar.play();
+            updateEditorCalendar();
+        }
+
+        function showNextCanvasCalendar() {
+            saveCurrentCanvasCalendar();
+            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === canvasesCalendar.length - 1) ? 0 : currentCanvasIndexCalendar + 1;
+            hoverSoundCalendar.play();
+            updateEditorCalendar();
+        }
+
+        let messageTimeoutCalendar; // To track the message display timeout
+
+        function handleClickCalendar(event) {
+            if (event.target.classList.contains('clickable')) {
+                // Toggle the 'completed' class
+                if (event.target.classList.contains('completed')) {
+                    event.target.classList.remove('completed');
                 } else {
-                    exitFullscreen();
+                    event.target.classList.add('completed');
+                    clickSoundCalendar.play();
+
+                    // Display a random congratulatory message
+                    displayCongratulatoryMessageCalendar();
                 }
+                // Save the updated content after toggling
+                saveCurrentCanvasCalendar();
+            }
+        }
+
+        function openChat() {
+            window.open('https://huggingface.co/chat/', '_blank');
+        }
+
+        // Function to select and display the appropriate greeting based on time of day
+        function selectGreetingCalendar() {
+            const now = new Date();
+            const hours = now.getHours();
+            let message = "";
+
+            if (hours >= 5 && hours < 12) { // Morning: 5 AM - 12 PM
+                message = getRandomMessageCalendar(greetingsCalendar.morning);
+            } else if (hours >= 12 && hours < 18) { // Afternoon: 12 PM - 6 PM
+                message = getRandomMessageCalendar(greetingsCalendar.afternoon);
+            } else { // Evening: 6 PM - 5 AM
+                message = getRandomMessageCalendar(greetingsCalendar.evening);
             }
 
-            // Show fullscreen button
-            function showFullscreenButton() {
-                fullscreenBtn.classList.add('visible');
+            greetingMessageElementCalendar.innerText = message;
+            greetingMessageElementCalendar.classList.remove('hidden'); // Ensure it's visible
+        }
+
+        // Helper function to get a random message from a given array
+        function getRandomMessageCalendar(messageArray) {
+            if (messageArray.length === 0) return "";
+            const randomIndex = Math.floor(Math.random() * messageArray.length);
+            return messageArray[randomIndex];
+        }
+
+        // Function to display a congratulatory message
+        function displayCongratulatoryMessageCalendar() {
+            if (congratulatoryMessagesCalendar.length === 0) return; // Ensure messages are loaded
+
+            // Select a random message
+            const randomIndex = Math.floor(Math.random() * congratulatoryMessagesCalendar.length);
+            const message = congratulatoryMessagesCalendar[randomIndex];
+            const fullMessage = `${message.icon} ${message.text}`;
+
+            // Clear any existing timeout to prevent multiple messages overlapping
+            if (messageTimeoutCalendar) {
+                clearTimeout(messageTimeoutCalendar);
+                messageTimeoutCalendar = null;
             }
 
-            // Hide fullscreen button
-            function hideFullscreenButton() {
-                fullscreenBtn.classList.remove('visible');
+            // Set the congratulatory message
+            greetingMessageElementCalendar.innerText = fullMessage;
+
+            // Remove 'hidden' class to trigger fade-in
+            greetingMessageElementCalendar.classList.remove('hidden');
+
+            // After 20 seconds, fade out and revert to greeting
+            messageTimeoutCalendar = setTimeout(() => {
+                // Add 'hidden' class to trigger fade-out
+                greetingMessageElementCalendar.classList.add('hidden');
+
+                // After fade-out transition (0.5s), revert to default greeting
+                setTimeout(() => {
+                    selectGreetingCalendar();
+                }, 500); // Match the CSS transition duration
+            }, 20000); // 20 seconds
+        }
+
+        // New Function: Handle conversion when '.' is typed
+        function handleDotConversionCalendar() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            const node = range.startContainer;
+
+            // Ensure we're dealing with a text node
+            if (node.nodeType !== Node.TEXT_NODE) return;
+            const text = node.textContent;
+            const dotIndex = text.lastIndexOf('.');
+
+            // If a '.' is found at the end of the text
+            if (dotIndex === text.length - 1) {
+                const beforeDot = text.slice(0, dotIndex).trim();
+
+                if (beforeDot.length === 0) return; // Avoid empty lines
+
+                // Replace the text node with a clickable span
+                const span = document.createElement('span');
+                span.classList.add('clickable');
+                span.textContent = beforeDot;
+
+                // Replace the text node with the span
+                node.parentNode.replaceChild(span, node);
+
+                // Insert a line break after the span
+                const br = document.createElement('br');
+                span.parentNode.insertBefore(br, span.nextSibling);
+
+                // Move the cursor to the new line after the line break
+                const newRange = document.createRange();
+                newRange.setStartAfter(br);
+                newRange.collapse(true);
+
+                // Update the selection to the new range
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+
+                // Save the updated content
+                saveCurrentCanvasCalendar();
             }
+        }
 
-            // Event listeners for long press on header
-            header.addEventListener('touchstart', (e) => {
-                // Start the timer
-                longPressTimer = setTimeout(() => {
-                    showFullscreenButton();
-                }, longPressDuration);
-            });
-
-            header.addEventListener('touchend', (e) => {
-                // Clear the timer
-                clearTimeout(longPressTimer);
-            });
-
-            header.addEventListener('touchmove', (e) => {
-                // If user moves finger, cancel the long press
-                clearTimeout(longPressTimer);
-            });
-
-            // Hide fullscreen button when tapping outside
-            document.addEventListener('touchstart', (e) => {
-                if (!fullscreenBtn.contains(e.target) && !header.contains(e.target)) {
-                    hideFullscreenButton();
-                }
-            });
-
-            // Click event for fullscreen button
-            fullscreenBtn.addEventListener('click', () => {
-                toggleFullscreen();
-                hideFullscreenButton();
-            });
-
-            // Existing JavaScript code...
-
-            const danishDays = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
-            const danishMonths = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
-
-            const startDate = 3; // October 3
-            const startMonth = 9; // October (0-based index)
-            const endMonth = 11; // December (0-based index)
-            const year = 2024;
-
-            const canvasKeys = [];
-            let totalDays = 0;
-
-            for (let month = startMonth; month <= endMonth; month++) {
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const startDay = month === startMonth ? startDate : 1;
-                for (let day = startDay; day <= daysInMonth; day++) {
-                    canvasKeys.push(`canvas${year}${(month + 1).toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`);
-                    totalDays++;
-                }
+        // New Keyup Event Listener for Immediate '.' Detection
+        editorCalendar.addEventListener('keyup', (e) => {
+            if (e.key === '.') {
+                handleDotConversionCalendar();
             }
+        });
 
-            let currentCanvasIndex = 0;
+        // Optional: Handle paste events to ensure '.' detection
+        editorCalendar.addEventListener('paste', (e) => {
+            // Delay execution to allow the paste to complete
+            setTimeout(() => {
+                handleDotConversionCalendar();
+            }, 0);
+        });
 
-            // Load canvases from localStorage or initialize them
-            const canvases = canvasKeys.map(key => localStorage.getItem(key) || '');
+        // Modified input event listener
+        editorCalendar.addEventListener('input', () => {
+            // Immediate processing without delay
 
-            // Load messages from messages.json
-            let greetings = {
-                morning: [],
-                afternoon: [],
-                evening: []
-            };
-            let congratulatoryMessages = [];
-
-            fetch('messages.json')
-                .then(response => response.json())
-                .then(data => {
-                    greetings = data.greetings;
-                    congratulatoryMessages = data.congratulations;
-                    // After loading messages, set the initial greeting
-                    selectGreeting();
-                })
-                .catch(error => {
-                    console.error('Error fetching messages:', error);
-                    // Fallback greeting messages in case of error
-                    greetings.morning = [
-                        "Morning, Mr. M! How about we kick things off with today’s game plan?",
-                        "Good morning, Mr. M! Let’s set our sights on a productive day!"
-                    ];
-                    greetings.afternoon = [
-                        "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
-                        "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
-                    ];
-                    greetings.evening = [
-                        "Good evening, Mr. M! Shall we go over the day's accomplishments?",
-                        "Hey Mr. M! Let’s recap and prep for tomorrow!"
-                    ];
-                    selectGreeting();
-                });
-
-            function updateEditor() {
-                let currentDay = startDate;
-                let currentMonth = startMonth;
-                for (let i = 0; i < currentCanvasIndex; i++) {
-                    currentDay++;
-                    if (currentDay > new Date(year, currentMonth + 1, 0).getDate()) {
-                        currentDay = 1;
-                        currentMonth++;
-                    }
-                }
-                const date = new Date(year, currentMonth, currentDay);
-                dayNameElement.innerText = danishDays[date.getDay()];
-                dateElement.innerText = currentDay;
-                monthNameElement.innerText = danishMonths[currentMonth];
-                editor.innerHTML = canvases[currentCanvasIndex];
-            }
-
-            function saveCurrentCanvas() {
-                canvases[currentCanvasIndex] = editor.innerHTML;
-                localStorage.setItem(canvasKeys[currentCanvasIndex], editor.innerHTML);
-            }
-
-            function translateText(text) {
-                // Adjusted translation to avoid interfering with '.'
-                return text
-                    .replace(/;/g, 'æ')
-                    .replace(/'/g, 'ø')
-                    .replace(/\[/g, 'å');
-                    // Removed the regex that replaces two digits with a dot
-            }
-
-            function setCurrentCanvasIndex() {
-                const today = new Date();
-                if (today >= new Date(year, startMonth, startDate) && today <= new Date(year, endMonth + 1, 0)) {
-                    const daysSinceStart = Math.floor((today - new Date(year, startMonth, startDate)) / (1000 * 60 * 60 * 24));
-                    currentCanvasIndex = Math.min(daysSinceStart, totalDays - 1);
-                } else {
-                    currentCanvasIndex = 0;
-                }
-            }
-
-            function showPreviousCanvas() {
-                saveCurrentCanvas();
-                currentCanvasIndex = (currentCanvasIndex === 0) ? canvases.length - 1 : currentCanvasIndex - 1;
-                hoverSound.play();
-                updateEditor();
-            }
-
-            function showNextCanvas() {
-                saveCurrentCanvas();
-                currentCanvasIndex = (currentCanvasIndex === canvases.length - 1) ? 0 : currentCanvasIndex + 1;
-                hoverSound.play();
-                updateEditor();
-            }
-
-            let messageTimeout; // To track the message display timeout
-
-            function handleClick(event) {
-                if (event.target.classList.contains('clickable')) {
-                    // Toggle the 'completed' class
-                    if (event.target.classList.contains('completed')) {
-                        event.target.classList.remove('completed');
-                    } else {
-                        event.target.classList.add('completed');
-                        clickSound.play();
-
-                        // Display a random congratulatory message
-                        displayCongratulatoryMessage();
-                    }
-                    // Save the updated content after toggling
-                    saveCurrentCanvas();
-                }
-            }
-
-            function openChat() {
-                window.open('https://huggingface.co/chat/', '_blank');
-            }
-
-            // Function to select and display the appropriate greeting based on time of day
-            function selectGreeting() {
-                const now = new Date();
-                const hours = now.getHours();
-                let message = "";
-
-                if (hours >= 5 && hours < 12) { // Morning: 5 AM - 12 PM
-                    message = getRandomMessage(greetings.morning);
-                } else if (hours >= 12 && hours < 18) { // Afternoon: 12 PM - 6 PM
-                    message = getRandomMessage(greetings.afternoon);
-                } else { // Evening: 6 PM - 5 AM
-                    message = getRandomMessage(greetings.evening);
-                }
-
-                greetingMessageElement.innerText = message;
-                greetingMessageElement.classList.remove('hidden'); // Ensure it's visible
-            }
-
-            // Helper function to get a random message from a given array
-            function getRandomMessage(messageArray) {
-                if (messageArray.length === 0) return "";
-                const randomIndex = Math.floor(Math.random() * messageArray.length);
-                return messageArray[randomIndex];
-            }
-
-            // Function to display a congratulatory message
-            function displayCongratulatoryMessage() {
-                if (congratulatoryMessages.length === 0) return; // Ensure messages are loaded
-
-                // Select a random message
-                const randomIndex = Math.floor(Math.random() * congratulatoryMessages.length);
-                const message = congratulatoryMessages[randomIndex];
-                const fullMessage = `${message.icon} ${message.text}`;
-
-                // Clear any existing timeout to prevent multiple messages overlapping
-                if (messageTimeout) {
-                    clearTimeout(messageTimeout);
-                    messageTimeout = null;
-                }
-
-                // Set the congratulatory message
-                greetingMessageElement.innerText = fullMessage;
-
-                // Remove 'hidden' class to trigger fade-in
-                greetingMessageElement.classList.remove('hidden');
-
-                // After 20 seconds, fade out and revert to greeting
-                messageTimeout = setTimeout(() => {
-                    // Add 'hidden' class to trigger fade-out
-                    greetingMessageElement.classList.add('hidden');
-
-                    // After fade-out transition (0.5s), revert to default greeting
-                    setTimeout(() => {
-                        selectGreeting();
-                    }, 500); // Match the CSS transition duration
-                }, 20000); // 20 seconds
-            }
-
-            // New Function: Handle conversion when '.' is typed
-            function handleDotConversion() {
+            const translatedText = translateTextCalendar(editorCalendar.innerText);
+            if (translatedText !== editorCalendar.innerText) {
                 const selection = window.getSelection();
-                if (!selection.rangeCount) return;
-                const range = selection.getRangeAt(0);
-                const node = range.startContainer;
-
-                // Ensure we're dealing with a text node
-                if (node.nodeType !== Node.TEXT_NODE) return;
-                const text = node.textContent;
-                const dotIndex = text.lastIndexOf('.');
-
-                // If a '.' is found at the end of the text
-                if (dotIndex === text.length - 1) {
-                    const beforeDot = text.slice(0, dotIndex).trim();
-
-                    if (beforeDot.length === 0) return; // Avoid empty lines
-
-                    // Replace the text node with a clickable span
-                    const span = document.createElement('span');
-                    span.classList.add('clickable');
-                    span.textContent = beforeDot;
-
-                    // Replace the text node with the span
-                    node.parentNode.replaceChild(span, node);
-
-                    // Insert a line break after the span
-                    const br = document.createElement('br');
-                    span.parentNode.insertBefore(br, span.nextSibling);
-
-                    // Move the cursor to the new line after the line break
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const cursorPosition = range.startOffset;
+                    editorCalendar.innerText = translatedText;
                     const newRange = document.createRange();
-                    newRange.setStartAfter(br);
+                    newRange.setStart(editorCalendar.firstChild, cursorPosition);
                     newRange.collapse(true);
-
-                    // Update the selection to the new range
                     selection.removeAllRanges();
                     selection.addRange(newRange);
-
-                    // Save the updated content
-                    saveCurrentCanvas();
                 }
             }
 
-            // New Keyup Event Listener for Immediate '.' Detection
-            editor.addEventListener('keyup', (e) => {
-                if (e.key === '.') {
-                    handleDotConversion();
-                }
-            });
+            // Save the current canvas
+            saveCurrentCanvasCalendar();
 
-            // Optional: Handle paste events to ensure '.' detection
-            editor.addEventListener('paste', (e) => {
-                // Delay execution to allow the paste to complete
-                setTimeout(() => {
-                    handleDotConversion();
-                }, 0);
-            });
+            // No delayed conversion needed
+        });
 
-            // Modified input event listener
-            editor.addEventListener('input', () => {
-                // Immediate processing without delay
+        // Event listeners for navigation and clicks
+        dateElementCalendar.addEventListener('click', showPreviousCanvasCalendar);
+        dayNameElementCalendar.addEventListener('click', showNextCanvasCalendar);
+        editorCalendar.addEventListener('click', handleClickCalendar);
 
-                const translatedText = translateText(editor.innerText);
-                if (translatedText !== editor.innerText) {
-                    const selection = window.getSelection();
-                    if (selection.rangeCount > 0) {
-                        const range = selection.getRangeAt(0);
-                        const cursorPosition = range.startOffset;
-                        editor.innerText = translatedText;
-                        const newRange = document.createRange();
-                        newRange.setStart(editor.firstChild, cursorPosition);
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    }
-                }
-
-                // Save the current canvas
-                saveCurrentCanvas();
-
-                // No delayed conversion needed
-            });
-
-            // Event listeners for navigation and clicks
-            dateElement.addEventListener('click', showPreviousCanvas);
-            dayNameElement.addEventListener('click', showNextCanvas);
-            editor.addEventListener('click', handleClick);
-
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft') {
-                    showPreviousCanvas();
-                } else if (e.key === 'ArrowRight') {
-                    showNextCanvas();
-                }
-            });
-
-            setCurrentCanvasIndex();
-            updateEditor();
-            // Greeting is set after messages are fetched
-        })();
-
-        /* === Timer JavaScript === */
-        (function() {
-            const knob = timerSection.querySelector('.knob');
-            const display = timerSection.querySelector('.display');
-            const modeName = timerSection.querySelector('.mode-name');
-            const progressRing = timerSection.querySelector('.progress');
-            const modeIndicators = timerSection.querySelectorAll('.mode-indicator');
-            const container = timerSection.querySelector('.timer-inner');
-            const canvas = timerSection.querySelector('.connecting-circle');
-            const ctx = canvas.getContext('2d');
-
-            // Sound effects
-            const hoverSound = document.getElementById('timer-hover-sound');
-            const clickSound = document.getElementById('timer-click-sound');
-            const alarmSound = document.getElementById('alarm-sound');
-
-            let angle = 0;
-            let isDragging = false;
-            let startAngle = 0;
-            let currentMode = 0;
-            let timerDuration = 0;
-            let timerInterval;
-            let modeChangeTimeout;
-            let animationFrame;
-            let isKnobMoved = false;
-            let audioUnlocked = false;
-
-            const modes = ['Pomodoro', 'Break', 'SoMe'];
-            const maxDurations = [25 * 60, 5 * 60, 7 * 60]; // in seconds
-
-            function setRotation(degrees) {
-                knob.style.transform = `rotate(${degrees}deg) translate(120px) rotate(-${degrees}deg)`;
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                showPreviousCanvasCalendar();
+            } else if (e.key === 'ArrowRight') {
+                showNextCanvasCalendar();
             }
+        });
 
-            function setProgress(percent) {
-                const circumference = 2 * Math.PI * 45;
-                const offset = circumference - (percent / 100) * circumference;
-                progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
-                progressRing.style.strokeDashoffset = offset;
+        setCurrentCanvasIndexCalendar();
+        updateEditorCalendar();
+        // Greeting is set after messages are fetched
+    </script>
+
+    <!-- Timer View Scripts -->
+    <script>
+        // Timer Variables
+        const knobTimer = document.querySelector('#timer-view .knob');
+        const displayTimer = document.querySelector('#timer-view .display');
+        const modeNameTimer = document.querySelector('#timer-view .mode-name');
+        const progressRingTimer = document.querySelector('#timer-view .progress');
+        const modeIndicatorsTimer = document.querySelectorAll('#timer-view .mode-indicator');
+        const containerTimer = document.querySelector('#timer-view .timer-container');
+        const canvasTimer = document.querySelector('#timer-view .connecting-circle');
+        const ctxTimer = canvasTimer.getContext('2d');
+
+        // Sound effects
+        const hoverSoundTimer = new Audio('Hover.wav');
+        const clickSoundTimer = new Audio('click.mp3');
+        const alarmSoundTimer = new Audio('1.mp3');
+
+        let angleTimer = 0;
+        let isDraggingTimer = false;
+        let startAngleTimer = 0;
+        let currentModeTimer = 0;
+        let timerDurationTimer = 0;
+        let timerIntervalTimer;
+        let modeChangeTimeoutTimer;
+        let animationFrameTimer;
+        let isKnobMovedTimer = false;
+        let audioUnlockedTimer = false;
+
+        const modesTimer = ['Pomodoro', 'Break', 'SoMe'];
+        const maxDurationsTimer = [25 * 60, 5 * 60, 7 * 60]; // in seconds
+
+        function setRotationTimer(degrees) {
+            knobTimer.style.transform = `rotate(${degrees}deg) translate(120px) rotate(-${degrees}deg)`;
+        }
+
+        function setProgressTimer(percent) {
+            const circumference = 2 * Math.PI * 45;
+            const offset = circumference - (percent / 100) * circumference;
+            progressRingTimer.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressRingTimer.style.strokeDashoffset = offset;
+        }
+
+        function formatTimeTimer(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerTimer() {
+            timerDurationTimer--;
+            if (timerDurationTimer <= 0) {
+                clearInterval(timerIntervalTimer);
+                cancelAnimationFrame(animationFrameTimer);
+                playAlarmTimer();
+                return;
             }
+            displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+            setProgressTimer((1 - timerDurationTimer / maxDurationsTimer[currentModeTimer]) * 100);
+        }
 
-            function formatTime(seconds) {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            }
+        function startTimerTimer() {
+            clearInterval(timerIntervalTimer);
+            cancelAnimationFrame(animationFrameTimer);
+            timerDurationTimer = maxDurationsTimer[currentModeTimer];
+            displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+            setProgressTimer(0);
+            timerIntervalTimer = setInterval(updateTimerTimer, 1000);
+            animateConnectingCircleTimer();
 
-            function updateTimer() {
-                timerDuration--;
-                if (timerDuration <= 0) {
-                    clearInterval(timerInterval);
-                    cancelAnimationFrame(animationFrame);
-                    playAlarm();
-                    return;
-                }
-                display.textContent = formatTime(timerDuration);
-                setProgress((1 - timerDuration / maxDurations[currentMode]) * 100);
-            }
+            // Play the click sound when the timer starts
+            clickSoundTimer.play();
+        }
 
-            function startTimer() {
-                clearInterval(timerInterval);
-                cancelAnimationFrame(animationFrame);
-                timerDuration = maxDurations[currentMode];
-                display.textContent = formatTime(timerDuration);
-                setProgress(0);
-                timerInterval = setInterval(updateTimer, 1000);
-                animateConnectingCircle();
+        function playAlarmTimer() {
+            let alarmCount = 0;
+            const maxAlarms = 5;
 
-                // Play the click sound when the timer starts
-                clickSound.play();
-            }
-
-            function playAlarm() {
-                let alarmCount = 0;
-                const maxAlarms = 5;
-
-                function playAlarmSound() {
-                    if (alarmCount < maxAlarms) {
-                        const playPromise = alarmSound.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                                alarmCount++;
-                                // Wait for the duration of the alarm sound before playing again
-                                setTimeout(playAlarmSound, alarmSound.duration * 1000);
-                            }).catch(error => {
-                                console.error('Failed to play alarm sound:', error);
-                            });
-                        } else {
-                            // Fallback if play() is undefined
-                            alarmCount++;
-                            setTimeout(playAlarmSound, 1000);
-                        }
-                    } else {
-                        // After playing the alarm 5 times, reset to show the current time
-                        updateCurrentTime();
-                        isKnobMoved = false; // Reset to show time mode
-                    }
-                }
-
-                playAlarmSound();
-            }
-
-            function showModeName() {
-                modeName.textContent = modes[currentMode];
-                modeName.style.opacity = '1';
-                display.style.opacity = '0';
-            }
-
-            function hideModeName() {
-                modeName.style.opacity = '0';
-                display.style.opacity = '1';
-            }
-
-            function updateCurrentTime() {
-                if (!isKnobMoved) {
-                    const now = new Date();
-                    const hours = now.getHours().toString().padStart(2, '0');
-                    const minutes = now.getMinutes().toString().padStart(2, '0');
-                    display.textContent = `${hours}:${minutes}`;
-                }
-            }
-
-            function unlockAudio() {
-                if (!audioUnlocked) {
-                    // Attempt to play a silent audio to unlock the audio context
-                    const silentAudio = new Audio();
-                    silentAudio.muted = true;
-                    const playPromise = silentAudio.play();
+            function playAlarmSoundTimer() {
+                if (alarmCount < maxAlarms) {
+                    const playPromise = alarmSoundTimer.play();
                     if (playPromise !== undefined) {
                         playPromise.then(() => {
-                            audioUnlocked = true;
-                            silentAudio.pause();
-                            silentAudio.src = '';
+                            alarmCount++;
+                            // Wait for the duration of the alarm sound before playing again
+                            setTimeout(playAlarmSoundTimer, alarmSoundTimer.duration * 1000);
                         }).catch(error => {
-                            console.warn('Audio unlock failed:', error);
+                            console.error('Failed to play alarm sound:', error);
                         });
+                    } else {
+                        // Fallback if play() is undefined
+                        alarmCount++;
+                        setTimeout(playAlarmSoundTimer, 1000);
                     }
+                } else {
+                    // After playing the alarm 5 times, reset to show the current time
+                    updateCurrentTimeTimer();
+                    isKnobMovedTimer = false; // Reset to show time mode
                 }
             }
 
-            function startDrag(e) {
-                isDragging = true;
-                isKnobMoved = true;
-                const rect = container.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                startAngle = Math.atan2(clientY - centerY, clientX - centerX);
-                clearTimeout(modeChangeTimeout);
+            playAlarmSoundTimer();
+        }
 
-                // Play hover sound when starting to drag the knob
-                hoverSound.play();
+        function showModeNameTimer() {
+            modeNameTimer.textContent = modesTimer[currentModeTimer];
+            modeNameTimer.style.opacity = '1';
+            displayTimer.style.opacity = '0';
+        }
 
-                // Unlock audio on first user interaction
-                unlockAudio();
+        function hideModeNameTimer() {
+            modeNameTimer.style.opacity = '0';
+            displayTimer.style.opacity = '1';
+        }
+
+        function updateCurrentTimeTimer() {
+            if (!isKnobMovedTimer) {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                displayTimer.textContent = `${hours}:${minutes}`;
             }
+        }
 
-            function drag(e) {
-                if (!isDragging) return;
-                const rect = container.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                const currentAngleRad = Math.atan2(clientY - centerY, clientX - centerX);
-                let deltaAngle = (currentAngleRad - startAngle) * (180 / Math.PI);
-                // Adjust deltaAngle to ensure smooth rotation
-                if (deltaAngle > 180) deltaAngle -= 360;
-                if (deltaAngle < -180) deltaAngle += 360;
-                angle += deltaAngle;
-                angle = (angle + 360) % 360;
-                setRotation(angle);
-                startAngle = currentAngleRad;
-
-                const newMode = Math.floor(angle / 120) % modes.length;
-                if (newMode !== currentMode) {
-                    currentMode = newMode;
-                    modeIndicators.forEach((indicator, index) => {
-                        indicator.classList.toggle('active', index === currentMode);
+        function unlockAudioTimer() {
+            if (!audioUnlockedTimer) {
+                // Attempt to play a silent audio to unlock the audio context
+                const silentAudio = new Audio();
+                silentAudio.muted = true;
+                const playPromise = silentAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        audioUnlockedTimer = true;
+                        silentAudio.pause();
+                        silentAudio.src = '';
+                    }).catch(error => {
+                        console.warn('Audio unlock failed:', error);
                     });
-                    showModeName();
-                    timerDuration = maxDurations[currentMode];
-                    display.textContent = formatTime(timerDuration);
-                    setProgress(0);
                 }
             }
+        }
 
-            function endDrag() {
-                if (isDragging) {
-                    isDragging = false;
-                    modeChangeTimeout = setTimeout(() => {
-                        hideModeName();
-                        startTimer();
-                    }, 2000);
+        function startDragTimer(e) {
+            isDraggingTimer = true;
+            isKnobMovedTimer = true;
+            const rect = containerTimer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startAngleTimer = Math.atan2(clientY - centerY, clientX - centerX);
+            clearTimeout(modeChangeTimeoutTimer);
 
-                    // Play click sound only if the knob was being dragged
-                    clickSound.play();
-                }
+            // Play hover sound when starting to drag the knob
+            hoverSoundTimer.play();
+
+            // Unlock audio on first user interaction
+            unlockAudioTimer();
+        }
+
+        function dragTimer(e) {
+            if (!isDraggingTimer) return;
+            const rect = containerTimer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const currentAngleRad = Math.atan2(clientY - centerY, clientX - centerX);
+            let deltaAngle = (currentAngleRad - startAngleTimer) * (180 / Math.PI);
+            // Adjust deltaAngle to ensure smooth rotation
+            if (deltaAngle > 180) deltaAngle -= 360;
+            if (deltaAngle < -180) deltaAngle += 360;
+            angleTimer += deltaAngle;
+            angleTimer = (angleTimer + 360) % 360;
+            setRotationTimer(angleTimer);
+            startAngleTimer = currentAngleRad;
+
+            const newMode = Math.floor(angleTimer / 120) % modesTimer.length;
+            if (newMode !== currentModeTimer) {
+                currentModeTimer = newMode;
+                modeIndicatorsTimer.forEach((indicator, index) => {
+                    indicator.classList.toggle('active', index === currentModeTimer);
+                });
+                showModeNameTimer();
+                timerDurationTimer = maxDurationsTimer[currentModeTimer];
+                displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+                setProgressTimer(0);
             }
+        }
 
-            function animateConnectingCircle() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.save();
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                
-                const time = Date.now() * 0.0005;
-                const radius = 135;
-                
-                ctx.beginPath();
-                for (let i = 0; i < 36; i++) {
-                    const angleDeg = i * 10;
-                    const angleRad = angleDeg * Math.PI / 180;
-                    const x = radius * Math.cos(angleRad);
-                    const y = radius * Math.sin(angleRad);
-                    const nextAngleRad = angleRad + time * 1.44;
-                    const nextX = radius * Math.cos(nextAngleRad);
-                    const nextY = radius * Math.sin(nextAngleRad);
-                    
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(nextX, nextY);
-                    
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 + 0.2 * Math.sin(time + i * 0.2)})`;
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                }
-                
-                ctx.restore();
-                
-                animationFrame = requestAnimationFrame(animateConnectingCircle);
+        function endDragTimer() {
+            if (isDraggingTimer) {
+                isDraggingTimer = false;
+                modeChangeTimeoutTimer = setTimeout(() => {
+                    hideModeNameTimer();
+                    startTimerTimer();
+                }, 2000);
+
+                // Play click sound only if the knob was being dragged
+                clickSoundTimer.play();
             }
+        }
 
-            // Event listeners
-            container.addEventListener('mousedown', startDrag);
-            container.addEventListener('touchstart', startDrag);
+        function animateConnectingCircleTimer() {
+            ctxTimer.clearRect(0, 0, canvasTimer.width, canvasTimer.height);
+            ctxTimer.save();
+            ctxTimer.translate(canvasTimer.width / 2, canvasTimer.height / 2);
+            
+            const time = Date.now() * 0.0005;
+            const radius = 135;
+            
+            ctxTimer.beginPath();
+            for (let i = 0; i < 36; i++) {
+                const angleDeg = i * 10;
+                const angleRad = angleDeg * Math.PI / 180;
+                const x = radius * Math.cos(angleRad);
+                const y = radius * Math.sin(angleRad);
+                const nextAngleRad = angleRad + time * 1.44;
+                const nextX = radius * Math.cos(nextAngleRad);
+                const nextY = radius * Math.sin(nextAngleRad);
+                
+                ctxTimer.moveTo(x, y);
+                ctxTimer.lineTo(nextX, nextY);
+                
+                ctxTimer.strokeStyle = `rgba(255, 255, 255, ${0.1 + 0.2 * Math.sin(time + i * 0.2)})`;
+                ctxTimer.lineWidth = 1.5;
+                ctxTimer.stroke();
+            }
+            
+            ctxTimer.restore();
+            
+            animationFrameTimer = requestAnimationFrame(animateConnectingCircleTimer);
+        }
 
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('touchmove', drag);
+        // Event listeners
+        containerTimer.addEventListener('mousedown', startDragTimer);
+        containerTimer.addEventListener('touchstart', startDragTimer);
 
-            document.addEventListener('mouseup', endDrag);
-            document.addEventListener('touchend', endDrag);
+        document.addEventListener('mousemove', dragTimer);
+        document.addEventListener('touchmove', dragTimer);
 
-            // Initialize
-            setRotation(0);
-            setProgress(0);
-            timerDuration = maxDurations[currentMode];
-            updateCurrentTime();
-            setInterval(updateCurrentTime, 1000);
-        })();
+        document.addEventListener('mouseup', endDragTimer);
+        document.addEventListener('touchend', endDragTimer);
+
+        // Initialize Timer
+        setRotationTimer(0);
+        setProgressTimer(0);
+        timerDurationTimer = maxDurationsTimer[currentModeTimer];
+        updateCurrentTimeTimer();
+        setInterval(updateCurrentTimeTimer, 1000);
+    </script>
+
+    <!-- Navigation Script -->
+    <script>
+        const btnCalendar = document.getElementById('btn-calendar');
+        const btnTimer = document.getElementById('btn-timer');
+        const calendarView = document.getElementById('calendar-view');
+        const timerView = document.getElementById('timer-view');
+        const navButtons = document.querySelectorAll('.nav-button');
+
+        btnCalendar.addEventListener('click', () => {
+            showView('calendar');
+        });
+
+        btnTimer.addEventListener('click', () => {
+            showView('timer');
+        });
+
+        function showView(view) {
+            if (view === 'calendar') {
+                calendarView.classList.add('active-view');
+                timerView.classList.remove('active-view');
+                btnCalendar.classList.add('active');
+                btnTimer.classList.remove('active');
+            } else if (view === 'timer') {
+                timerView.classList.add('active-view');
+                calendarView.classList.remove('active-view');
+                btnTimer.classList.add('active');
+                btnCalendar.classList.remove('active');
+            }
+        }
+
+        // Optional: Allow keyboard navigation (e.g., using Tab or other keys)
+        // You can add more event listeners here if needed.
     </script>
 </body>
 </html>
