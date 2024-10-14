@@ -44,6 +44,7 @@
             align-items: flex-start;
             padding: 10px;
             box-sizing: border-box;
+            position: relative; /* For positioning the fullscreen button */
         }
 
         #date-container {
@@ -76,11 +77,17 @@
 
         .clickable {
             cursor: pointer;
-            transition: text-decoration 0.3s ease;
+            transition: text-decoration 0.3s ease, color 0.3s ease;
         }
 
         .clickable:hover {
             text-decoration: underline;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            color: gray; /* Optional: Change color to indicate completion */
+            transition: text-decoration 0.3s ease, color 0.3s ease;
         }
 
         /* New Box Styling */
@@ -114,6 +121,7 @@
         }
 
         .text-bubble {
+            position: relative;
             background: rgba(255, 255, 255, 0.8);
             padding: 10px 15px;
             border-radius: 15px;
@@ -121,6 +129,43 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             text-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
             flex-grow: 1;
+            transition: opacity 0.5s ease;
+            opacity: 1;
+        }
+
+        .text-bubble.hidden {
+            opacity: 0;
+        }
+
+        /* Fullscreen Button Styling */
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .fullscreen-button.visible {
+            opacity: 1;
+        }
+
+        /* Fullscreen Button Icon */
+        .fullscreen-button::before {
+            content: "\26F6"; /* Unicode for fullscreen icon */
+            font-size: 20px;
+            color: black;
         }
 
         /* Responsive adjustments */
@@ -141,6 +186,17 @@
             .text-bubble {
                 font-size: 16px;
             }
+
+            .fullscreen-button {
+                width: 35px;
+                height: 35px;
+                top: 8px;
+                right: 8px;
+            }
+
+            .fullscreen-button::before {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
@@ -152,6 +208,8 @@
                 <div id="month-name"></div>
             </div>
             <div id="day-name"></div>
+            <!-- Fullscreen Button -->
+            <button class="fullscreen-button" id="fullscreen-btn" aria-label="Toggle Fullscreen"></button>
         </div>
         <div id="editor" contenteditable="true"></div>
     </div>
@@ -171,6 +229,88 @@
         const dayNameElement = document.getElementById('day-name');
         const dateElement = document.getElementById('date');
         const monthNameElement = document.getElementById('month-name');
+        const greetingMessageElement = document.getElementById('greeting-message');
+
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const header = document.getElementById('header');
+
+        let longPressTimer;
+        const longPressDuration = 500; // milliseconds
+
+        // Function to enter fullscreen
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
+        }
+
+        // Function to exit fullscreen
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { /* Safari */
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { /* IE11 */
+                document.msExitFullscreen();
+            }
+        }
+
+        // Toggle fullscreen mode
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                enterFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        }
+
+        // Show fullscreen button
+        function showFullscreenButton() {
+            fullscreenBtn.classList.add('visible');
+        }
+
+        // Hide fullscreen button
+        function hideFullscreenButton() {
+            fullscreenBtn.classList.remove('visible');
+        }
+
+        // Event listeners for long press on header
+        header.addEventListener('touchstart', (e) => {
+            // Start the timer
+            longPressTimer = setTimeout(() => {
+                showFullscreenButton();
+            }, longPressDuration);
+        });
+
+        header.addEventListener('touchend', (e) => {
+            // Clear the timer
+            clearTimeout(longPressTimer);
+        });
+
+        header.addEventListener('touchmove', (e) => {
+            // If user moves finger, cancel the long press
+            clearTimeout(longPressTimer);
+        });
+
+        // Hide fullscreen button when tapping outside
+        document.addEventListener('touchstart', (e) => {
+            if (!fullscreenBtn.contains(e.target) && !header.contains(e.target)) {
+                hideFullscreenButton();
+            }
+        });
+
+        // Click event for fullscreen button
+        fullscreenBtn.addEventListener('click', () => {
+            toggleFullscreen();
+            hideFullscreenButton();
+        });
+
+        // Existing JavaScript code...
 
         const danishDays = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
         const danishMonths = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
@@ -193,15 +333,46 @@
         }
 
         let currentCanvasIndex = 0;
-        let typingTimer;
-        const typingDelay = 1000; // 1 second delay
-        const clickableDelay = 10000; // 10 seconds delay
 
         const hoverSound = new Audio('Hover.wav');
         const clickSound = new Audio('click.mp3');
 
         // Load canvases from localStorage or initialize them
         const canvases = canvasKeys.map(key => localStorage.getItem(key) || '');
+
+        // Load messages from messages.json
+        let greetings = {
+            morning: [],
+            afternoon: [],
+            evening: []
+        };
+        let congratulatoryMessages = [];
+
+        fetch('messages.json')
+            .then(response => response.json())
+            .then(data => {
+                greetings = data.greetings;
+                congratulatoryMessages = data.congratulations;
+                // After loading messages, set the initial greeting
+                selectGreeting();
+            })
+            .catch(error => {
+                console.error('Error fetching messages:', error);
+                // Fallback greeting messages in case of error
+                greetings.morning = [
+                    "Morning, Mr. M! How about we kick things off with today’s game plan?",
+                    "Good morning, Mr. M! Let’s set our sights on a productive day!"
+                ];
+                greetings.afternoon = [
+                    "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
+                    "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
+                ];
+                greetings.evening = [
+                    "Good evening, Mr. M! Shall we go over the day's accomplishments?",
+                    "Hey Mr. M! Let’s recap and prep for tomorrow!"
+                ];
+                selectGreeting();
+            });
 
         function updateEditor() {
             let currentDay = startDate;
@@ -226,11 +397,12 @@
         }
 
         function translateText(text) {
+            // Adjusted translation to avoid interfering with '.'
             return text
                 .replace(/;/g, 'æ')
                 .replace(/'/g, 'ø')
-                .replace(/\[/g, 'å')
-                .replace(/\b(\d{2})(\d{2})\b/g, '$1.$2');
+                .replace(/\[/g, 'å');
+                // Removed the regex that replaces two digits with a dot
         }
 
         function setCurrentCanvasIndex() {
@@ -257,22 +429,22 @@
             updateEditor();
         }
 
-        function makeTextClickable() {
-            const textNodes = editor.childNodes;
-            textNodes.forEach(node => {
-                if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') {
-                    const span = document.createElement('span');
-                    span.textContent = node.textContent;
-                    span.classList.add('clickable');
-                    node.replaceWith(span);
-                }
-            });
-        }
+        let messageTimeout; // To track the message display timeout
 
         function handleClick(event) {
             if (event.target.classList.contains('clickable')) {
-                event.target.style.textDecoration = 'line-through';
-                clickSound.play();
+                // Toggle the 'completed' class
+                if (event.target.classList.contains('completed')) {
+                    event.target.classList.remove('completed');
+                } else {
+                    event.target.classList.add('completed');
+                    clickSound.play();
+
+                    // Display a random congratulatory message
+                    displayCongratulatoryMessage();
+                }
+                // Save the updated content after toggling
+                saveCurrentCanvas();
             }
         }
 
@@ -280,39 +452,155 @@
             window.open('https://huggingface.co/chat/', '_blank');
         }
 
-        // Select greeting message based on time of day
+        // Function to select and display the appropriate greeting based on time of day
         function selectGreeting() {
-            const morningMessages = [
-                "Morning, Mr. M! How about we kick things off with today’s game plan?",
-                "Good morning, Mr. M! Let’s set our sights on a productive day!"
-                // Add more morning messages here
-            ];
-            const afternoonMessages = [
-                "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
-                "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
-                // Add more afternoon messages here
-            ];
-            const eveningMessages = [
-                "Good evening, Mr. M! Shall we go over the day's accomplishments?",
-                "Hey Mr. M! Let’s recap and prep for tomorrow!"
-                // Add more evening messages here
-            ];
-
             const now = new Date();
             const hours = now.getHours();
-            let message;
+            let message = "";
 
             if (hours >= 5 && hours < 12) { // Morning: 5 AM - 12 PM
-                message = morningMessages[Math.floor(Math.random() * morningMessages.length)];
+                message = getRandomMessage(greetings.morning);
             } else if (hours >= 12 && hours < 18) { // Afternoon: 12 PM - 6 PM
-                message = afternoonMessages[Math.floor(Math.random() * afternoonMessages.length)];
+                message = getRandomMessage(greetings.afternoon);
             } else { // Evening: 6 PM - 5 AM
-                message = eveningMessages[Math.floor(Math.random() * eveningMessages.length)];
+                message = getRandomMessage(greetings.evening);
             }
 
-            document.getElementById('greeting-message').innerText = message;
+            greetingMessageElement.innerText = message;
+            greetingMessageElement.classList.remove('hidden'); // Ensure it's visible
         }
 
+        // Helper function to get a random message from a given array
+        function getRandomMessage(messageArray) {
+            if (messageArray.length === 0) return "";
+            const randomIndex = Math.floor(Math.random() * messageArray.length);
+            return messageArray[randomIndex];
+        }
+
+        // Function to display a congratulatory message
+        function displayCongratulatoryMessage() {
+            if (congratulatoryMessages.length === 0) return; // Ensure messages are loaded
+
+            // Select a random message
+            const randomIndex = Math.floor(Math.random() * congratulatoryMessages.length);
+            const message = congratulatoryMessages[randomIndex];
+            const fullMessage = `${message.icon} ${message.text}`;
+
+            // Clear any existing timeout to prevent multiple messages overlapping
+            if (messageTimeout) {
+                clearTimeout(messageTimeout);
+                messageTimeout = null;
+            }
+
+            // Set the congratulatory message
+            greetingMessageElement.innerText = fullMessage;
+
+            // Remove 'hidden' class to trigger fade-in
+            greetingMessageElement.classList.remove('hidden');
+
+            // After 20 seconds, fade out and revert to greeting
+            messageTimeout = setTimeout(() => {
+                // Add 'hidden' class to trigger fade-out
+                greetingMessageElement.classList.add('hidden');
+
+                // After fade-out transition (0.5s), revert to default greeting
+                setTimeout(() => {
+                    selectGreeting();
+                }, 500); // Match the CSS transition duration
+            }, 20000); // 20 seconds
+        }
+
+        // New Function: Handle conversion when '.' is typed
+        function handleDotConversion() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            const node = range.startContainer;
+
+            // Ensure we're dealing with a text node
+            if (node.nodeType !== Node.TEXT_NODE) return;
+
+            const text = node.textContent;
+            const dotIndex = text.lastIndexOf('.');
+
+            // If a '.' is found at the end of the text
+            if (dotIndex === text.length - 1) {
+                const beforeDot = text.slice(0, dotIndex).trim();
+
+                if (beforeDot.length === 0) return; // Avoid empty lines
+
+                // Replace the text node with a clickable span
+                const span = document.createElement('span');
+                span.classList.add('clickable');
+                span.textContent = beforeDot;
+
+                // Replace the text node with the span
+                node.parentNode.replaceChild(span, node);
+
+                // Insert a line break after the span
+                const br = document.createElement('br');
+                span.parentNode.insertBefore(br, span.nextSibling);
+
+                // Move the cursor to the new line after the line break
+                const newRange = document.createRange();
+                newRange.setStartAfter(br);
+                newRange.collapse(true);
+
+                // Update the selection to the new range
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+
+                // Save the updated content
+                saveCurrentCanvas();
+            }
+        }
+
+        // New Keyup Event Listener for Immediate '.' Detection
+        editor.addEventListener('keyup', (e) => {
+            if (e.key === '.') {
+                handleDotConversion();
+            }
+        });
+
+        // Optional: Handle paste events to ensure '.' detection
+        editor.addEventListener('paste', (e) => {
+            // Delay execution to allow the paste to complete
+            setTimeout(() => {
+                handleDotConversion();
+            }, 0);
+        });
+
+        // Modified input event listener
+        editor.addEventListener('input', () => {
+            // Immediate processing without delay
+
+            const translatedText = translateText(editor.innerText);
+            if (translatedText !== editor.innerText) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const cursorPosition = range.startOffset;
+                    editor.innerText = translatedText;
+                    const newRange = document.createRange();
+                    newRange.setStart(editor.firstChild, cursorPosition);
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                }
+            }
+
+            // Save the current canvas
+            saveCurrentCanvas();
+
+            // No delayed conversion needed
+        });
+
+        // Event listeners for navigation and clicks
+        dateElement.addEventListener('click', showPreviousCanvas);
+        dayNameElement.addEventListener('click', showNextCanvas);
+        editor.addEventListener('click', handleClick);
+
+        // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') {
                 showPreviousCanvas();
@@ -321,32 +609,9 @@
             }
         });
 
-        editor.addEventListener('input', () => {
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(() => {
-                const translatedText = translateText(editor.innerText);
-                if (translatedText !== editor.innerText) {
-                    const cursorPosition = window.getSelection().getRangeAt(0).startOffset;
-                    editor.innerText = translatedText;
-                    const range = document.createRange();
-                    const sel = window.getSelection();
-                    range.setStart(editor.childNodes[0], cursorPosition);
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                }
-                saveCurrentCanvas();
-                setTimeout(makeTextClickable, clickableDelay);
-            }, typingDelay);
-        });
-
-        dateElement.addEventListener('click', showPreviousCanvas);
-        dayNameElement.addEventListener('click', showNextCanvas);
-        editor.addEventListener('click', handleClick);
-
         setCurrentCanvasIndex();
         updateEditor();
-        selectGreeting(); // Set the greeting message based on the current time
+        // Greeting is set after messages are fetched
     </script>
 </body>
 </html>
