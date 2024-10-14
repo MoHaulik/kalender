@@ -1,0 +1,124 @@
+{
+    "greetings": {
+        "morning": [
+            "Morning, Mr. M! How about we kick things off with today’s game plan?",
+            "Good morning, Mr. M! Let’s set our sights on a productive day!",
+            "Rise and shine, Mr. M! Let’s make today great!",
+            "Top of the morning to you, Mr. M! Ready to tackle the day?"
+        ],
+        "afternoon": [
+            "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
+            "Hey Mr. M! Let’s take a quick look at the afternoon's plan.",
+            "Hope your afternoon is going well, Mr. M! Let’s keep up the good work.",
+            "Good afternoon, Mr. M! Let’s stay focused and productive."
+        ],
+        "evening": [
+            "Good evening, Mr. M! Shall we go over the day's accomplishments?",
+            "Hey Mr. M! Let’s recap and prep for tomorrow!",
+            "Hope you had a productive day, Mr. M! Let’s wind down.",
+            "Good evening, Mr. M! Time to relax and reflect on your achievements today."
+        ]
+    },
+    "congratulations": [
+        {
+            "icon": "😊",
+            "text": "Well done, Mr. M! You're crushing it!"
+        },
+        {
+            "icon": "🎉",
+            "text": "Task complete! You're one step closer to achieving your goals!"
+        },
+        {
+            "icon": "👍",
+            "text": "Great job, Mr. M! Keep the momentum going!"
+        },
+        {
+            "icon": "👏",
+            "text": "You did it! Take a moment to celebrate your success!"
+        },
+        {
+            "icon": "🎊",
+            "text": "Woohoo! Task complete! You're on a roll!"
+        },
+        {
+            "icon": "🔥",
+            "text": "Excellent work, Mr. M! Your productivity is on fire!"
+        },
+        {
+            "icon": "😃",
+            "text": "You're making progress, and that's something to be proud of!"
+        },
+        {
+            "icon": "😌",
+            "text": "Task complete! Now, take a deep breath and get ready for the next challenge!"
+        },
+        {
+            "icon": "🎈",
+            "text": "You're doing fantastically, Mr. M! Keep it up!"
+        },
+        {
+            "icon": "😊",
+            "text": "Well done! You're building momentum and getting closer to your goals!"
+        },
+        {
+            "icon": "😎",
+            "text": "You're on top of things, Mr. M! Keep pushing forward!"
+        },
+        {
+            "icon": "👏",
+            "text": "Task complete! Take a moment to reflect on your accomplishment!"
+        },
+        {
+            "icon": "👏",
+            "text": "Bravo, Mr. M! You're doing a great job!"
+        },
+        {
+            "icon": "😃",
+            "text": "You're making great progress, Mr. M! Keep the pace!"
+        },
+        {
+            "icon": "💪",
+            "text": "You've got this, Mr. M! Keep going!"
+        },
+        {
+            "icon": "😃",
+            "text": "Task complete! You're one task closer to achieving your dreams!"
+        },
+        {
+            "icon": "🎉",
+            "text": "Woohoo! You're on a productivity streak!"
+        },
+        {
+            "icon": "😊",
+            "text": "Great job, Mr. M! Your hard work is paying off!"
+        },
+        {
+            "icon": "😃",
+            "text": "You're taking care of business, Mr. M! Keep it up!"
+        },
+        {
+            "icon": "😌",
+            "text": "Task complete! Now, take a break and recharge!"
+        },
+        {
+            "icon": "😊",
+            "text": "You're doing great, Mr. M! Keep pushing forward!"
+        },
+        {
+            "icon": "🔥",
+            "text": "Excellent work, Mr. M! You're making a difference!"
+        },
+        {
+            "icon": "🎉",
+            "text": "You're almost there, Mr. M! Keep going!"
+        },
+        {
+            "icon": "😊",
+            "text": "Task complete! You're building a strong foundation for success!"
+        },
+        {
+            "icon": "😊",
+            "text": "You're amazing, Mr. M! Keep shining!"
+        }
+    ]
+}
