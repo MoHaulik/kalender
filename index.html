@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar and Timer</title>
+    <title>Calendar and Timer with Need to Do Feature</title>
     <style>
         /* Shared Styles */
         body, html {
@@ -100,6 +100,22 @@
             text-decoration: line-through;
             color: gray;
             transition: text-decoration 0.3s ease, color 0.3s ease;
+            animation: none; /* Stop any animation */
+            text-shadow: none; /* Remove any text shadow */
+        }
+
+        /* Need to do items */
+        .need-to-do {
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(255, 0, 0, 1);
+            }
         }
 
         /* Avatar Box Styling */
@@ -630,9 +646,16 @@
                 // Toggle the 'completed' class
                 if (event.target.classList.contains('completed')) {
                     event.target.classList.remove('completed');
+                    // If it's a need-to-do item, re-add the glow animation
+                    if (event.target.classList.contains('need-to-do')) {
+                        event.target.style.animation = '';
+                    }
                 } else {
                     event.target.classList.add('completed');
                     clickSoundCalendar.play();
+
+                    // Stop the glow animation when completed
+                    event.target.style.animation = 'none';
 
                     // Display a random congratulatory message
                     displayCongratulatoryMessageCalendar();
@@ -704,8 +727,8 @@
             }, 20000); // 20 seconds
         }
 
-        // New Function: Handle conversion when '.' is typed
-        function handleDotConversionCalendar() {
+        // New Function: Handle conversion when '.' or '!' is typed
+        function handleSpecialCharacterConversionCalendar(char) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
             const range = selection.getRangeAt(0);
@@ -714,18 +737,21 @@
             // Ensure we're dealing with a text node
             if (node.nodeType !== Node.TEXT_NODE) return;
             const text = node.textContent;
-            const dotIndex = text.lastIndexOf('.');
+            const charIndex = text.lastIndexOf(char);
 
-            // If a '.' is found at the end of the text
-            if (dotIndex === text.length - 1) {
-                const beforeDot = text.slice(0, dotIndex).trim();
+            // If the character is found at the end of the text
+            if (charIndex === text.length - 1) {
+                const beforeChar = text.slice(0, charIndex).trim();
 
-                if (beforeDot.length === 0) return; // Avoid empty lines
+                if (beforeChar.length === 0) return; // Avoid empty lines
 
                 // Replace the text node with a clickable span
                 const span = document.createElement('span');
                 span.classList.add('clickable');
-                span.textContent = beforeDot;
+                if (char === '!') {
+                    span.classList.add('need-to-do');
+                }
+                span.textContent = beforeChar;
 
                 // Replace the text node with the span
                 node.parentNode.replaceChild(span, node);
@@ -748,18 +774,24 @@
             }
         }
 
-        // New Keyup Event Listener for Immediate '.' Detection
+        // New Keyup Event Listener for Immediate '.' and '!' Detection
         editorCalendar.addEventListener('keyup', (e) => {
-            if (e.key === '.') {
-                handleDotConversionCalendar();
+            if (e.key === '.' || e.key === '!') {
+                handleSpecialCharacterConversionCalendar(e.key);
             }
         });
 
-        // Optional: Handle paste events to ensure '.' detection
+        // Optional: Handle paste events to ensure '.' and '!' detection
         editorCalendar.addEventListener('paste', (e) => {
             // Delay execution to allow the paste to complete
             setTimeout(() => {
-                handleDotConversionCalendar();
+                // You can loop through the content to handle any lines ending with '.' or '!'
+                // For simplicity, we can check the last character
+                const text = editorCalendar.innerText;
+                const lastChar = text.charAt(text.length - 1);
+                if (lastChar === '.' || lastChar === '!') {
+                    handleSpecialCharacterConversionCalendar(lastChar);
+                }
             }, 0);
         });
 
