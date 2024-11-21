@@ -19,14 +19,13 @@
         .view-container {
             flex: 1;
             display: none; /* Hidden by default */
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
             flex-direction: column;
             gap: 20px;
             position: relative;
             width: 100%;
             height: 100%;
-            overflow-y: auto; /* Enable vertical scrolling */
         }
 
         .active-view {
@@ -47,7 +46,7 @@
             align-items: center;
             border-radius: 20px;
             color: rgba(0, 0, 0, 0.8);
-            overflow: hidden;
+            height: 70%; /* Adjusted to allow space for scrolling */
         }
 
         #header-calendar {
@@ -58,6 +57,7 @@
             padding: 10px;
             box-sizing: border-box;
             position: relative;
+            flex-shrink: 0;
         }
 
         #date-container-calendar {
@@ -69,7 +69,15 @@
             margin: 0;
             line-height: 1.2;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer; /* Indicate clickable elements */
+            cursor: pointer; /* Added cursor pointer for clickable dates */
+        }
+
+        #to-do-list-container {
+            width: 100%;
+            overflow-y: auto;
+            flex: 1;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
         #editor-calendar {
@@ -79,11 +87,9 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             margin-top: 10px;
-            box-sizing: border-box;
             font-size: 26px;
             background: transparent;
             color: inherit;
-            padding: 10px;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
@@ -132,6 +138,7 @@
             border-radius: 20px;
             gap: 15px;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .avatar {
@@ -401,12 +408,7 @@
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
-            cursor: pointer; /* Indicate editable title */
-        }
-
-        .block-title[contenteditable]:focus {
-            outline: 2px dashed #ccc;
-            background-color: rgba(255, 255, 255, 0.2);
+            cursor: text; /* Indicate editable text */
         }
 
         .block-tasks {
@@ -463,7 +465,7 @@
                 <button class="fullscreen-button" id="fullscreen-btn-calendar" aria-label="Toggle Fullscreen"></button>
             </div>
 
-            <!-- Editor and Work Blocks -->
+            <!-- To-Do List Container -->
             <div id="to-do-list-container">
                 <div id="editor-calendar" contenteditable="true"></div>
 
@@ -674,22 +676,22 @@
 
         // Work Blocks Variables
         const workBlockKeys = canvasKeysCalendar.map(key => ({
-            block1: `${key}-workBlock1`,
-            block2: `${key}-workBlock2`,
-            block3: `${key}-workBlock3`,
             title1: `${key}-workBlockTitle1`,
             title2: `${key}-workBlockTitle2`,
-            title3: `${key}-workBlockTitle3`
+            title3: `${key}-workBlockTitle3`,
+            block1: `${key}-workBlock1`,
+            block2: `${key}-workBlock2`,
+            block3: `${key}-workBlock3`
         }));
 
         // Arrays to store the content
         const workBlocksContent = canvasKeysCalendar.map(key => ({
-            block1: localStorage.getItem(`${key}-workBlock1`) || '',
-            block2: localStorage.getItem(`${key}-workBlock2`) || '',
-            block3: localStorage.getItem(`${key}-workBlock3`) || '',
             title1: localStorage.getItem(`${key}-workBlockTitle1`) || 'Work Block 1',
             title2: localStorage.getItem(`${key}-workBlockTitle2`) || 'Work Block 2',
-            title3: localStorage.getItem(`${key}-workBlockTitle3`) || 'Work Block 3'
+            title3: localStorage.getItem(`${key}-workBlockTitle3`) || 'Work Block 3',
+            block1: localStorage.getItem(`${key}-workBlock1`) || '',
+            block2: localStorage.getItem(`${key}-workBlock2`) || '',
+            block3: localStorage.getItem(`${key}-workBlock3`) || ''
         }));
 
         function updateEditorCalendar() {
@@ -713,12 +715,13 @@
             workBlockElements.block2.innerHTML = workBlocksContent[currentCanvasIndexCalendar].block2;
             workBlockElements.block3.innerHTML = workBlocksContent[currentCanvasIndexCalendar].block3;
 
-            workBlockTitleElements.block1.innerText = workBlocksContent[currentCanvasIndexCalendar].title1;
-            workBlockTitleElements.block2.innerText = workBlocksContent[currentCanvasIndexCalendar].title2;
-            workBlockTitleElements.block3.innerText = workBlocksContent[currentCanvasIndexCalendar].title3;
+            // Load Work Block titles
+            workBlockElements.title1.innerText = workBlocksContent[currentCanvasIndexCalendar].title1;
+            workBlockElements.title2.innerText = workBlocksContent[currentCanvasIndexCalendar].title2;
+            workBlockElements.title3.innerText = workBlocksContent[currentCanvasIndexCalendar].title3;
 
             // Check if Work Blocks are completed
-            Object.values(workBlockElements).forEach(blockElement => {
+            Object.values(workBlockElements.blocks).forEach(blockElement => {
                 checkWorkBlockCompletion(blockElement.parentNode);
             });
         }
@@ -732,17 +735,17 @@
             workBlocksContent[currentCanvasIndexCalendar].block2 = workBlockElements.block2.innerHTML;
             workBlocksContent[currentCanvasIndexCalendar].block3 = workBlockElements.block3.innerHTML;
 
-            workBlocksContent[currentCanvasIndexCalendar].title1 = workBlockTitleElements.block1.innerText;
-            workBlocksContent[currentCanvasIndexCalendar].title2 = workBlockTitleElements.block2.innerText;
-            workBlocksContent[currentCanvasIndexCalendar].title3 = workBlockTitleElements.block3.innerText;
+            workBlocksContent[currentCanvasIndexCalendar].title1 = workBlockElements.title1.innerText;
+            workBlocksContent[currentCanvasIndexCalendar].title2 = workBlockElements.title2.innerText;
+            workBlocksContent[currentCanvasIndexCalendar].title3 = workBlockElements.title3.innerText;
 
             localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].block1, workBlockElements.block1.innerHTML);
             localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].block2, workBlockElements.block2.innerHTML);
             localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].block3, workBlockElements.block3.innerHTML);
 
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title1, workBlockTitleElements.block1.innerText);
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title2, workBlockTitleElements.block2.innerText);
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title3, workBlockTitleElements.block3.innerText);
+            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title1, workBlockElements.title1.innerText);
+            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title2, workBlockElements.title2.innerText);
+            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title3, workBlockElements.title3.innerText);
         }
 
         function translateTextCalendar(text) {
@@ -799,10 +802,8 @@
                     // Display a random congratulatory message
                     displayCongratulatoryMessageCalendar();
 
-                    // Check if all tasks in the block are completed
-                    if (event.target.closest('.work-block')) {
-                        checkWorkBlockCompletion(event.target.closest('.work-block'));
-                    }
+                    // Check if all tasks are completed in the main editor
+                    // You can add additional logic here if needed
                 }
                 // Save the updated content after toggling
                 saveCurrentCanvasCalendar();
@@ -871,7 +872,7 @@
             }, 20000); // 20 seconds
         }
 
-        // Function to handle special character conversion in any contenteditable area
+        // Function to handle special character conversion in any contenteditable element
         function handleSpecialCharacterConversion(element, char) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
@@ -918,65 +919,42 @@
             }
         }
 
-        // Universal Keyup Event Listener for Immediate '.' and '!' Detection
-        function addSpecialCharacterListener(element) {
-            element.addEventListener('keyup', (e) => {
-                if (e.key === '.' || e.key === '!') {
-                    handleSpecialCharacterConversion(element, e.key);
-                }
-            });
+        // General function to handle keyup events on contenteditable elements
+        function handleKeyUp(event) {
+            if (event.key === '.' || event.key === '!') {
+                handleSpecialCharacterConversion(event.currentTarget, event.key);
+            }
         }
 
-        // Apply to all contenteditable areas
-        addSpecialCharacterListener(editorCalendar);
-        Object.values(workBlockElements).forEach(blockElement => {
-            addSpecialCharacterListener(blockElement);
-        });
+        // General function to handle clicks on tasks in contenteditable elements
+        function handleClick(event) {
+            if (event.target.classList.contains('clickable')) {
+                // Toggle the 'completed' class
+                if (event.target.classList.contains('completed')) {
+                    event.target.classList.remove('completed');
+                    // If it's a need-to-do item, re-add the glow animation
+                    if (event.target.classList.contains('need-to-do')) {
+                        event.target.style.animation = '';
+                    }
+                } else {
+                    event.target.classList.add('completed');
+                    clickSoundCalendar.play();
 
-        // Input Event Listener for Translation and Saving
-        function addInputListener(element) {
-            element.addEventListener('input', () => {
-                // Immediate processing without delay
+                    // Stop the glow animation when completed
+                    event.target.style.animation = 'none';
 
-                const translatedText = translateTextCalendar(element.innerText);
-                if (translatedText !== element.innerText) {
-                    const selection = window.getSelection();
-                    if (selection.rangeCount > 0) {
-                        const range = selection.getRangeAt(0);
-                        const cursorPosition = range.startOffset;
-                        element.innerText = translatedText;
-                        const newRange = document.createRange();
-                        newRange.setStart(element.firstChild, cursorPosition);
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
+                    // Display a random congratulatory message
+                    displayCongratulatoryMessageCalendar();
+
+                    // Check if all tasks in the block are completed
+                    if (event.currentTarget.classList.contains('block-tasks')) {
+                        checkWorkBlockCompletion(event.currentTarget.parentNode);
                     }
                 }
-
-                // Save the current content
+                // Save the updated content after toggling
                 saveCurrentCanvasCalendar();
-            });
+            }
         }
-
-        // Apply to all contenteditable areas
-        addInputListener(editorCalendar);
-        Object.values(workBlockElements).forEach(blockElement => {
-            addInputListener(blockElement);
-        });
-        Object.values(workBlockTitleElements).forEach(titleElement => {
-            addInputListener(titleElement);
-        });
-
-        // Click Event Listener for Marking Tasks as Completed
-        function addClickListener(element) {
-            element.addEventListener('click', handleClickCalendar);
-        }
-
-        // Apply to all contenteditable areas
-        addClickListener(editorCalendar);
-        Object.values(workBlockElements).forEach(blockElement => {
-            addClickListener(blockElement);
-        });
 
         // Function to check if all tasks in a Work Block are completed
         function checkWorkBlockCompletion(workBlockElement) {
@@ -998,16 +976,30 @@
 
         // Work Blocks JavaScript
         const workBlockElements = {
+            title1: document.querySelector('.work-block[data-block-index="1"] .block-title'),
+            title2: document.querySelector('.work-block[data-block-index="2"] .block-title'),
+            title3: document.querySelector('.work-block[data-block-index="3"] .block-title'),
             block1: document.querySelector('.work-block[data-block-index="1"] .block-tasks'),
             block2: document.querySelector('.work-block[data-block-index="2"] .block-tasks'),
-            block3: document.querySelector('.work-block[data-block-index="3"] .block-tasks')
+            block3: document.querySelector('.work-block[data-block-index="3"] .block-tasks'),
+            blocks: {
+                block1: document.querySelector('.work-block[data-block-index="1"] .block-tasks'),
+                block2: document.querySelector('.work-block[data-block-index="2"] .block-tasks'),
+                block3: document.querySelector('.work-block[data-block-index="3"] .block-tasks')
+            }
         };
 
-        const workBlockTitleElements = {
-            block1: document.querySelector('.work-block[data-block-index="1"] .block-title'),
-            block2: document.querySelector('.work-block[data-block-index="2"] .block-title'),
-            block3: document.querySelector('.work-block[data-block-index="3"] .block-title')
-        };
+        // Add event listeners to Work Blocks and main editor
+        [editorCalendar, ...Object.values(workBlockElements.blocks)].forEach(element => {
+            element.addEventListener('keyup', handleKeyUp);
+            element.addEventListener('click', handleClick);
+            element.addEventListener('input', saveCurrentCanvasCalendar);
+        });
+
+        // Save titles when they are edited
+        [workBlockElements.title1, workBlockElements.title2, workBlockElements.title3].forEach(titleElement => {
+            titleElement.addEventListener('input', saveCurrentCanvasCalendar);
+        });
 
         // Event listeners for navigation and clicks
         dateElementCalendar.addEventListener('click', showPreviousCanvasCalendar);
@@ -1029,6 +1021,8 @@
 
     <!-- Timer View Scripts -->
     <script>
+        // Your existing Timer View Scripts remain unchanged
+        // (Include your full Timer script here)
         // Timer Variables
         const knobTimer = document.querySelector('#timer-view .knob');
         const displayTimer = document.querySelector('#timer-view .display');
@@ -1233,10 +1227,10 @@
             ctxTimer.clearRect(0, 0, canvasTimer.width, canvasTimer.height);
             ctxTimer.save();
             ctxTimer.translate(canvasTimer.width / 2, canvasTimer.height / 2);
-            
+
             const time = Date.now() * 0.0005;
             const radius = 135;
-            
+
             ctxTimer.beginPath();
             for (let i = 0; i < 36; i++) {
                 const angleDeg = i * 10;
@@ -1246,17 +1240,17 @@
                 const nextAngleRad = angleRad + time * 1.44;
                 const nextX = radius * Math.cos(nextAngleRad);
                 const nextY = radius * Math.sin(nextAngleRad);
-                
+
                 ctxTimer.moveTo(x, y);
                 ctxTimer.lineTo(nextX, nextY);
-                
+
                 ctxTimer.strokeStyle = `rgba(255, 255, 255, ${0.1 + 0.2 * Math.sin(time + i * 0.2)})`;
                 ctxTimer.lineWidth = 1.5;
                 ctxTimer.stroke();
             }
-            
+
             ctxTimer.restore();
-            
+
             animationFrameTimer = requestAnimationFrame(animateConnectingCircleTimer);
         }
 
