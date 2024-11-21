@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar and Timer with Work Blocks Feature</title>
+    <title>Calendar and Timer with Work Blocks</title>
     <style>
         /* Shared Styles */
         body, html {
@@ -48,6 +47,8 @@
             align-items: center;
             border-radius: 20px;
             color: rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+            max-height: 80vh;
         }
 
         #header-calendar {
@@ -73,15 +74,10 @@
 
         #editor-calendar {
             width: 100%;
-            height: calc(100% - 60px);
             border: none;
             outline: none;
             white-space: pre-wrap;
             word-wrap: break-word;
-            overflow-y: auto;
-            margin-top: 10px;
-            box-sizing: border-box;
-            font-size: 26px;
             background: transparent;
             color: inherit;
             padding: 10px;
@@ -119,16 +115,16 @@
             }
         }
 
-        /* Work Blocks Styling */
+        /* Work Blocks Styles */
         .work-block {
-            border-radius: 15px;
+            width: 100%;
+            margin-bottom: 20px;
             padding: 15px;
-            margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(5px);
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
             position: relative;
             overflow: hidden;
-            transition: background 0.3s ease;
+            transition: background 0.5s ease, color 0.5s ease;
         }
 
         .work-block-title {
@@ -136,44 +132,59 @@
             font-weight: bold;
             margin-bottom: 10px;
             cursor: pointer;
+            transition: text-decoration 0.3s ease, color 0.3s ease;
         }
 
         .work-block-tasks {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
+            padding-left: 20px;
         }
 
-        .work-block-task-input {
-            width: 100%;
-            padding: 8px;
-            font-size: 18px;
-            border: none;
-            outline: none;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 8px;
-            margin-top: 10px;
+        /* Soap Bubble Animation */
+        .soap-bubble {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.5), transparent 70%);
+            animation: moveBubble 10s infinite;
+            opacity: 0.7;
         }
 
-        .work-block.soup-bubble-1 {
-            background: linear-gradient(135deg, rgba(255, 182, 193, 0.3), rgba(255, 105, 180, 0.3));
+        @keyframes moveBubble {
+            0% {
+                transform: translate(0%, 0%) scale(1);
+            }
+            50% {
+                transform: translate(50%, 50%) scale(1.5);
+            }
+            100% {
+                transform: translate(0%, 0%) scale(1);
+            }
         }
 
-        .work-block.soup-bubble-2 {
-            background: linear-gradient(135deg, rgba(173, 216, 230, 0.3), rgba(0, 191, 255, 0.3));
+        /* Unique Colors for Each Work Block */
+        .work-block:nth-child(1) {
+            background-color: rgba(255, 182, 193, 0.2);
         }
 
-        .work-block.soup-bubble-3 {
-            background: linear-gradient(135deg, rgba(144, 238, 144, 0.3), rgba(0, 255, 127, 0.3));
+        .work-block:nth-child(2) {
+            background-color: rgba(173, 216, 230, 0.2);
         }
 
-        .work-block.greyed-out {
-            background: rgba(200, 200, 200, 0.5) !important;
+        .work-block:nth-child(3) {
+            background-color: rgba(144, 238, 144, 0.2);
         }
 
-        /* Additional Styles for Task Items */
-        .task-item {
-            margin-bottom: 5px;
+        /* Fade to Grey when all tasks are completed */
+        .work-block.completed {
+            background-color: rgba(200, 200, 200, 0.5) !important;
+        }
+
+        /* Title crossed out when completed */
+        .work-block-title.completed {
+            text-decoration: line-through;
+            color: gray;
         }
 
         /* Avatar Box Styling */
@@ -452,7 +463,26 @@
                 <!-- Fullscreen Button -->
                 <button class="fullscreen-button" id="fullscreen-btn-calendar" aria-label="Toggle Fullscreen"></button>
             </div>
-            <div id="editor-calendar" contenteditable="true"></div>
+            <!-- Work Blocks -->
+            <div id="editor-calendar">
+                <div class="work-block" data-block-index="0">
+                    <div class="soap-bubble"></div>
+                    <div class="work-block-title" contenteditable="true">Work Block 1</div>
+                    <div class="work-block-tasks" contenteditable="true"></div>
+                </div>
+                <div class="work-block" data-block-index="1">
+                    <div class="soap-bubble"></div>
+                    <div class="work-block-title" contenteditable="true">Work Block 2</div>
+                    <div class="work-block-tasks" contenteditable="true"></div>
+                </div>
+                <div class="work-block" data-block-index="2">
+                    <div class="soap-bubble"></div>
+                    <div class="work-block-title" contenteditable="true">Work Block 3</div>
+                    <div class="work-block-tasks" contenteditable="true"></div>
+                </div>
+                <!-- Regular To-Do List -->
+                <div id="regular-todo" contenteditable="true" placeholder="Add your tasks here..."></div>
+            </div>
         </div>
 
         <!-- Avatar Box for Calendar View -->
@@ -583,30 +613,8 @@
         const danishDaysCalendar = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
         const danishMonthsCalendar = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
 
-        const startDateCalendar = 3; // October 3
-        const startMonthCalendar = 9; // October (0-based index)
-        const endMonthCalendar = 11; // December (0-based index)
-        const yearCalendar = 2024;
-
-        const canvasKeysCalendar = [];
-        let totalDaysCalendar = 0;
-
-        for (let month = startMonthCalendar; month <= endMonthCalendar; month++) {
-            const daysInMonth = new Date(yearCalendar, month + 1, 0).getDate();
-            const startDay = month === startMonthCalendar ? startDateCalendar : 1;
-            for (let day = startDay; day <= daysInMonth; day++) {
-                canvasKeysCalendar.push(`canvas${yearCalendar}${(month + 1).toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`);
-                totalDaysCalendar++;
-            }
-        }
-
-        let currentCanvasIndexCalendar = 0;
-
         const hoverSoundCalendar = new Audio('Hover.wav');
         const clickSoundCalendar = new Audio('click.mp3');
-
-        // Load canvases from localStorage or initialize them
-        const canvasesCalendar = canvasKeysCalendar.map(key => localStorage.getItem(key) || '');
 
         // Load messages from messages.json
         let greetingsCalendar = {
@@ -643,26 +651,11 @@
             });
 
         function updateEditorCalendar() {
-            let currentDay = startDateCalendar;
-            let currentMonth = startMonthCalendar;
-            for (let i = 0; i < currentCanvasIndexCalendar; i++) {
-                currentDay++;
-                if (currentDay > new Date(yearCalendar, currentMonth + 1, 0).getDate()) {
-                    currentDay = 1;
-                    currentMonth++;
-                }
-            }
-            const date = new Date(yearCalendar, currentMonth, currentDay);
-            dayNameElementCalendar.innerText = danishDaysCalendar[date.getDay()];
-            dateElementCalendar.innerText = currentDay;
-            monthNameElementCalendar.innerText = danishMonthsCalendar[currentMonth];
-            editorCalendar.innerHTML = canvasesCalendar[currentCanvasIndexCalendar] || generateDefaultContent();
-            initializeWorkBlocks();
-        }
-
-        function saveCurrentCanvasCalendar() {
-            canvasesCalendar[currentCanvasIndexCalendar] = editorCalendar.innerHTML;
-            localStorage.setItem(canvasKeysCalendar[currentCanvasIndexCalendar], editorCalendar.innerHTML);
+            const today = new Date();
+            dayNameElementCalendar.innerText = danishDaysCalendar[today.getDay()];
+            dateElementCalendar.innerText = today.getDate();
+            monthNameElementCalendar.innerText = danishMonthsCalendar[today.getMonth()];
+            loadWorkBlocks();
         }
 
         function translateTextCalendar(text) {
@@ -671,34 +664,7 @@
                 .replace(/;/g, 'æ')
                 .replace(/'/g, 'ø')
                 .replace(/\[/g, 'å');
-                // Removed the regex that replaces two digits with a dot
         }
-
-        function setCurrentCanvasIndexCalendar() {
-            const today = new Date();
-            if (today >= new Date(yearCalendar, startMonthCalendar, startDateCalendar) && today <= new Date(yearCalendar, endMonthCalendar + 1, 0)) {
-                const daysSinceStart = Math.floor((today - new Date(yearCalendar, startMonthCalendar, startDateCalendar)) / (1000 * 60 * 60 * 24));
-                currentCanvasIndexCalendar = Math.min(daysSinceStart, totalDaysCalendar - 1);
-            } else {
-                currentCanvasIndexCalendar = 0;
-            }
-        }
-
-        function showPreviousCanvasCalendar() {
-            saveCurrentCanvasCalendar();
-            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === 0) ? canvasesCalendar.length - 1 : currentCanvasIndexCalendar - 1;
-            hoverSoundCalendar.play();
-            updateEditorCalendar();
-        }
-
-        function showNextCanvasCalendar() {
-            saveCurrentCanvasCalendar();
-            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === canvasesCalendar.length - 1) ? 0 : currentCanvasIndexCalendar + 1;
-            hoverSoundCalendar.play();
-            updateEditorCalendar();
-        }
-
-        let messageTimeoutCalendar; // To track the message display timeout
 
         function handleClickCalendar(event) {
             if (event.target.classList.contains('clickable')) {
@@ -720,13 +686,7 @@
                     displayCongratulatoryMessageCalendar();
                 }
                 // Save the updated content after toggling
-                saveCurrentCanvasCalendar();
-
-                // Check if all tasks in the work block are completed
-                const workBlock = event.target.closest('.work-block');
-                if (workBlock) {
-                    checkWorkBlockCompletion(workBlock);
-                }
+                saveWorkBlocks();
             }
         }
 
@@ -793,7 +753,7 @@
         }
 
         // New Function: Handle conversion when '.' or '!' is typed
-        function handleSpecialCharacterConversionCalendar(char) {
+        function handleSpecialCharacterConversionCalendar(char, element) {
             const selection = window.getSelection();
             if (!selection.rangeCount) return;
             const range = selection.getRangeAt(0);
@@ -835,171 +795,113 @@
                 selection.addRange(newRange);
 
                 // Save the updated content
-                saveCurrentCanvasCalendar();
+                saveWorkBlocks();
             }
         }
 
-        // New Keyup Event Listener for Immediate '.' and '!' Detection
-        editorCalendar.addEventListener('keyup', (e) => {
-            if (e.key === '.' || e.key === '!') {
-                handleSpecialCharacterConversionCalendar(e.key);
-            }
-        });
-
-        // Optional: Handle paste events to ensure '.' and '!' detection
-        editorCalendar.addEventListener('paste', (e) => {
-            // Delay execution to allow the paste to complete
-            setTimeout(() => {
-                // You can loop through the content to handle any lines ending with '.' or '!'
-                // For simplicity, we can check the last character
-                const text = editorCalendar.innerText;
-                const lastChar = text.charAt(text.length - 1);
-                if (lastChar === '.' || lastChar === '!') {
-                    handleSpecialCharacterConversionCalendar(lastChar);
-                }
-            }, 0);
-        });
-
-        // Modified input event listener
-        editorCalendar.addEventListener('input', () => {
-            // Immediate processing without delay
-
-            const translatedText = translateTextCalendar(editorCalendar.innerText);
-            if (translatedText !== editorCalendar.innerText) {
+        // Handle input events for Work Blocks and Regular To-Do
+        function handleInputEventCalendar(e) {
+            const element = e.target;
+            const translatedText = translateTextCalendar(element.innerText);
+            if (translatedText !== element.innerText) {
                 const selection = window.getSelection();
                 if (selection.rangeCount > 0) {
                     const range = selection.getRangeAt(0);
                     const cursorPosition = range.startOffset;
-                    editorCalendar.innerText = translatedText;
+                    element.innerText = translatedText;
                     const newRange = document.createRange();
-                    newRange.setStart(editorCalendar.firstChild, cursorPosition);
+                    newRange.setStart(element.firstChild, cursorPosition);
                     newRange.collapse(true);
                     selection.removeAllRanges();
                     selection.addRange(newRange);
                 }
             }
 
-            // Save the current canvas
-            saveCurrentCanvasCalendar();
+            // Save the current state
+            saveWorkBlocks();
+        }
 
-            // No delayed conversion needed
-        });
+        // Handle keyup events for special character conversion
+        function handleKeyUpEventCalendar(e) {
+            if (e.key === '.' || e.key === '!') {
+                handleSpecialCharacterConversionCalendar(e.key, e.target);
+            }
+        }
 
-        // Event listeners for navigation and clicks
-        dateElementCalendar.addEventListener('click', showPreviousCanvasCalendar);
-        dayNameElementCalendar.addEventListener('click', showNextCanvasCalendar);
-        editorCalendar.addEventListener('click', handleClickCalendar);
+        // Save Work Blocks and Regular To-Do List
+        function saveWorkBlocks() {
+            const workBlocks = document.querySelectorAll('.work-block');
+            const workBlocksData = [];
+            workBlocks.forEach((block, index) => {
+                const title = block.querySelector('.work-block-title').innerHTML;
+                const tasks = block.querySelector('.work-block-tasks').innerHTML;
+                const completed = block.classList.contains('completed');
+                workBlocksData.push({ title, tasks, completed });
+            });
+            const regularTodo = document.getElementById('regular-todo').innerHTML;
+            localStorage.setItem('workBlocksData', JSON.stringify(workBlocksData));
+            localStorage.setItem('regularTodo', regularTodo);
+        }
 
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                showPreviousCanvasCalendar();
-            } else if (e.key === 'ArrowRight') {
-                showNextCanvasCalendar();
+        // Load Work Blocks and Regular To-Do List
+        function loadWorkBlocks() {
+            const workBlocksData = JSON.parse(localStorage.getItem('workBlocksData')) || [];
+            const workBlocks = document.querySelectorAll('.work-block');
+            workBlocks.forEach((block, index) => {
+                if (workBlocksData[index]) {
+                    const titleElement = block.querySelector('.work-block-title');
+                    const tasksElement = block.querySelector('.work-block-tasks');
+                    titleElement.innerHTML = workBlocksData[index].title;
+                    tasksElement.innerHTML = workBlocksData[index].tasks;
+                    if (workBlocksData[index].completed) {
+                        block.classList.add('completed');
+                        titleElement.classList.add('completed');
+                    } else {
+                        block.classList.remove('completed');
+                        titleElement.classList.remove('completed');
+                    }
+                }
+            });
+            const regularTodo = localStorage.getItem('regularTodo') || '';
+            document.getElementById('regular-todo').innerHTML = regularTodo;
+        }
+
+        // Check if all tasks in a block are completed
+        function checkWorkBlockCompletion(block) {
+            const tasks = block.querySelectorAll('.clickable');
+            const allCompleted = Array.from(tasks).every(task => task.classList.contains('completed'));
+            if (allCompleted && tasks.length > 0) {
+                block.classList.add('completed');
+                block.querySelector('.work-block-title').classList.add('completed');
+            } else {
+                block.classList.remove('completed');
+                block.querySelector('.work-block-title').classList.remove('completed');
+            }
+            saveWorkBlocks();
+        }
+
+        // Event delegation for clicks within editor
+        editorCalendar.addEventListener('click', (e) => {
+            handleClickCalendar(e);
+            if (e.target.classList.contains('clickable')) {
+                const block = e.target.closest('.work-block');
+                if (block) {
+                    checkWorkBlockCompletion(block);
+                }
             }
         });
 
-        setCurrentCanvasIndexCalendar();
+        // Event listeners for input and keyup in work blocks and regular to-do
+        const editableElements = document.querySelectorAll('.work-block-title, .work-block-tasks, #regular-todo');
+        editableElements.forEach(element => {
+            element.addEventListener('input', handleInputEventCalendar);
+            element.addEventListener('keyup', handleKeyUpEventCalendar);
+        });
+
+        // Initialize
+        let messageTimeoutCalendar;
         updateEditorCalendar();
         // Greeting is set after messages are fetched
-
-        // New Functions for Work Blocks
-        function generateDefaultContent() {
-            return `
-                <div class="work-block soup-bubble-1" data-block-index="0">
-                    <div class="work-block-title">Work Block 1</div>
-                    <ul class="work-block-tasks"></ul>
-                    <input type="text" class="work-block-task-input" placeholder="Add a task...">
-                </div>
-                <div class="work-block soup-bubble-2" data-block-index="1">
-                    <div class="work-block-title">Work Block 2</div>
-                    <ul class="work-block-tasks"></ul>
-                    <input type="text" class="work-block-task-input" placeholder="Add a task...">
-                </div>
-                <div class="work-block soup-bubble-3" data-block-index="2">
-                    <div class="work-block-title">Work Block 3</div>
-                    <ul class="work-block-tasks"></ul>
-                    <input type="text" class="work-block-task-input" placeholder="Add a task...">
-                </div>
-                <div class="regular-tasks">
-                    <!-- Regular tasks will go here -->
-                </div>
-            `;
-        }
-
-        function initializeWorkBlocks() {
-            const taskInputs = editorCalendar.querySelectorAll('.work-block-task-input');
-            taskInputs.forEach(input => {
-                input.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addTaskToWorkBlock(this);
-                    }
-                });
-            });
-
-            const taskTitles = editorCalendar.querySelectorAll('.work-block-title');
-            taskTitles.forEach(title => {
-                title.addEventListener('click', function () {
-                    // Allow editing the title
-                    const newTitle = prompt('Edit Title:', this.textContent);
-                    if (newTitle !== null) {
-                        this.textContent = newTitle;
-                        saveCurrentCanvasCalendar();
-                    }
-                });
-            });
-
-            // Reattach click handlers to tasks
-            const tasks = editorCalendar.querySelectorAll('.clickable');
-            tasks.forEach(task => {
-                task.addEventListener('click', handleClickCalendar);
-            });
-
-            // Check completion status
-            const workBlocks = editorCalendar.querySelectorAll('.work-block');
-            workBlocks.forEach(block => {
-                checkWorkBlockCompletion(block);
-            });
-        }
-
-        function addTaskToWorkBlock(inputElement) {
-            const taskText = inputElement.value.trim();
-            if (taskText === '') return;
-
-            const taskItem = document.createElement('li');
-            taskItem.classList.add('task-item');
-
-            const taskSpan = document.createElement('span');
-            taskSpan.classList.add('clickable');
-            taskSpan.textContent = taskText;
-
-            taskItem.appendChild(taskSpan);
-
-            const tasksList = inputElement.previousElementSibling;
-            tasksList.appendChild(taskItem);
-
-            inputElement.value = '';
-            saveCurrentCanvasCalendar();
-
-            // Attach click event
-            taskSpan.addEventListener('click', handleClickCalendar);
-        }
-
-        function checkWorkBlockCompletion(workBlock) {
-            const tasks = workBlock.querySelectorAll('.work-block-tasks .clickable');
-            const completedTasks = workBlock.querySelectorAll('.work-block-tasks .clickable.completed');
-
-            const title = workBlock.querySelector('.work-block-title');
-
-            if (tasks.length > 0 && tasks.length === completedTasks.length) {
-                title.classList.add('completed');
-                workBlock.classList.add('greyed-out');
-            } else {
-                title.classList.remove('completed');
-                workBlock.classList.remove('greyed-out');
-            }
-        }
     </script>
 
     <!-- Timer View Scripts -->
@@ -1249,7 +1151,7 @@
         setRotationTimer(0);
         setProgressTimer(0);
         timerDurationTimer = maxDurationsTimer[currentModeTimer];
-        updateCurrentTimeTimer();https://github.com/MoHaulik/kalender/blob/main/index.html
+        updateCurrentTimeTimer();
         setInterval(updateCurrentTimeTimer, 1000);
     </script>
 
