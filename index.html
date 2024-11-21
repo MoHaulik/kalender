@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar and Timer with Need to Do Feature</title>
+    <title>Calendar and Timer with Work Blocks Feature</title>
     <style>
         /* Shared Styles */
         body, html {
@@ -116,6 +117,63 @@
             to {
                 text-shadow: 0 0 20px rgba(255, 0, 0, 1);
             }
+        }
+
+        /* Work Blocks Styling */
+        .work-block {
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        .work-block-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .work-block-tasks {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .work-block-task-input {
+            width: 100%;
+            padding: 8px;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .work-block.soup-bubble-1 {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.3), rgba(255, 105, 180, 0.3));
+        }
+
+        .work-block.soup-bubble-2 {
+            background: linear-gradient(135deg, rgba(173, 216, 230, 0.3), rgba(0, 191, 255, 0.3));
+        }
+
+        .work-block.soup-bubble-3 {
+            background: linear-gradient(135deg, rgba(144, 238, 144, 0.3), rgba(0, 255, 127, 0.3));
+        }
+
+        .work-block.greyed-out {
+            background: rgba(200, 200, 200, 0.5) !important;
+        }
+
+        /* Additional Styles for Task Items */
+        .task-item {
+            margin-bottom: 5px;
         }
 
         /* Avatar Box Styling */
@@ -379,66 +437,6 @@
                 height: 12px;
             }
         }
-
-        /* Work Block Styles */
-        .work-block {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            transition: background 0.3s ease;
-        }
-
-        .work-block-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .work-block.completed .work-block-title {
-            text-decoration: line-through;
-            color: gray;
-        }
-
-        .work-block.completed {
-            background: rgba(200, 200, 200, 0.5);
-        }
-
-        .work-block-tasks {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .work-block-tasks li {
-            margin-bottom: 5px;
-        }
-
-        .work-block.color1 {
-            background: linear-gradient(135deg, rgba(255, 182, 193, 0.6), rgba(255, 105, 180, 0.6));
-        }
-
-        .work-block.color2 {
-            background: linear-gradient(135deg, rgba(135, 206, 235, 0.6), rgba(0, 191, 255, 0.6));
-        }
-
-        .work-block.color3 {
-            background: linear-gradient(135deg, rgba(152, 251, 152, 0.6), rgba(50, 205, 50, 0.6));
-        }
-
-        .task-input {
-            width: 100%;
-            padding: 5px;
-            margin-top: 5px;
-            border: none;
-            border-radius: 5px;
-            outline: none;
-            font-size: 16px;
-        }
-
-        .task-input::placeholder {
-            color: rgba(0, 0, 0, 0.5);
-        }
     </style>
 </head>
 <body>
@@ -658,18 +656,8 @@
             dayNameElementCalendar.innerText = danishDaysCalendar[date.getDay()];
             dateElementCalendar.innerText = currentDay;
             monthNameElementCalendar.innerText = danishMonthsCalendar[currentMonth];
-            editorCalendar.innerHTML = canvasesCalendar[currentCanvasIndexCalendar];
-
-            // Check if it's a weekday (Monday to Friday)
-            if (date.getDay() >= 1 && date.getDay() <= 5) {
-                // Check if the Work Blocks are already present
-                if (!editorCalendar.querySelector('.work-block')) {
-                    // Insert the Work Blocks
-                    insertWorkBlocks();
-                    // Add event listeners to the task inputs
-                    addTaskInputListeners();
-                }
-            }
+            editorCalendar.innerHTML = canvasesCalendar[currentCanvasIndexCalendar] || generateDefaultContent();
+            initializeWorkBlocks();
         }
 
         function saveCurrentCanvasCalendar() {
@@ -731,22 +719,14 @@
                     // Display a random congratulatory message
                     displayCongratulatoryMessageCalendar();
                 }
-
-                // Check if all tasks under the parent Work Block are completed
-                const workBlock = event.target.closest('.work-block');
-                if (workBlock) {
-                    const tasks = workBlock.querySelectorAll('.clickable');
-                    const completedTasks = workBlock.querySelectorAll('.clickable.completed');
-                    if (tasks.length === completedTasks.length && tasks.length > 0) {
-                        // All tasks are completed
-                        workBlock.classList.add('completed');
-                    } else {
-                        workBlock.classList.remove('completed');
-                    }
-                }
-
                 // Save the updated content after toggling
                 saveCurrentCanvasCalendar();
+
+                // Check if all tasks in the work block are completed
+                const workBlock = event.target.closest('.work-block');
+                if (workBlock) {
+                    checkWorkBlockCompletion(workBlock);
+                }
             }
         }
 
@@ -919,45 +899,107 @@
             }
         });
 
-        function insertWorkBlocks() {
-            const workBlock1 = createWorkBlock('wb1', 'Work Block 1', 'color1');
-            const workBlock2 = createWorkBlock('wb2', 'Work Block 2', 'color2');
-            const workBlock3 = createWorkBlock('wb3', 'Work Block 3', 'color3');
-            editorCalendar.innerHTML += workBlock1 + workBlock2 + workBlock3;
-        }
+        setCurrentCanvasIndexCalendar();
+        updateEditorCalendar();
+        // Greeting is set after messages are fetched
 
-        function createWorkBlock(id, title, colorClass) {
+        // New Functions for Work Blocks
+        function generateDefaultContent() {
             return `
-            <div class="work-block ${colorClass}" data-id="${id}">
-                <div class="work-block-title">${title}</div>
-                <ul class="work-block-tasks">
-                    <!-- Sub-tasks will be added here -->
-                </ul>
-                <input type="text" class="task-input" placeholder="Add a task...">
-            </div>`;
+                <div class="work-block soup-bubble-1" data-block-index="0">
+                    <div class="work-block-title">Work Block 1</div>
+                    <ul class="work-block-tasks"></ul>
+                    <input type="text" class="work-block-task-input" placeholder="Add a task...">
+                </div>
+                <div class="work-block soup-bubble-2" data-block-index="1">
+                    <div class="work-block-title">Work Block 2</div>
+                    <ul class="work-block-tasks"></ul>
+                    <input type="text" class="work-block-task-input" placeholder="Add a task...">
+                </div>
+                <div class="work-block soup-bubble-3" data-block-index="2">
+                    <div class="work-block-title">Work Block 3</div>
+                    <ul class="work-block-tasks"></ul>
+                    <input type="text" class="work-block-task-input" placeholder="Add a task...">
+                </div>
+                <div class="regular-tasks">
+                    <!-- Regular tasks will go here -->
+                </div>
+            `;
         }
 
-        function addTaskInputListeners() {
-            const taskInputs = editorCalendar.querySelectorAll('.task-input');
+        function initializeWorkBlocks() {
+            const taskInputs = editorCalendar.querySelectorAll('.work-block-task-input');
             taskInputs.forEach(input => {
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && this.value.trim() !== '') {
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
                         e.preventDefault();
-                        const taskText = this.value.trim();
-                        const li = document.createElement('li');
-                        li.innerHTML = `<span class="clickable">${taskText}</span>`;
-                        const tasksList = this.previousElementSibling; // the UL
-                        tasksList.appendChild(li);
-                        this.value = '';
+                        addTaskToWorkBlock(this);
+                    }
+                });
+            });
+
+            const taskTitles = editorCalendar.querySelectorAll('.work-block-title');
+            taskTitles.forEach(title => {
+                title.addEventListener('click', function () {
+                    // Allow editing the title
+                    const newTitle = prompt('Edit Title:', this.textContent);
+                    if (newTitle !== null) {
+                        this.textContent = newTitle;
                         saveCurrentCanvasCalendar();
                     }
                 });
             });
+
+            // Reattach click handlers to tasks
+            const tasks = editorCalendar.querySelectorAll('.clickable');
+            tasks.forEach(task => {
+                task.addEventListener('click', handleClickCalendar);
+            });
+
+            // Check completion status
+            const workBlocks = editorCalendar.querySelectorAll('.work-block');
+            workBlocks.forEach(block => {
+                checkWorkBlockCompletion(block);
+            });
         }
 
-        setCurrentCanvasIndexCalendar();
-        updateEditorCalendar();
-        // Greeting is set after messages are fetched
+        function addTaskToWorkBlock(inputElement) {
+            const taskText = inputElement.value.trim();
+            if (taskText === '') return;
+
+            const taskItem = document.createElement('li');
+            taskItem.classList.add('task-item');
+
+            const taskSpan = document.createElement('span');
+            taskSpan.classList.add('clickable');
+            taskSpan.textContent = taskText;
+
+            taskItem.appendChild(taskSpan);
+
+            const tasksList = inputElement.previousElementSibling;
+            tasksList.appendChild(taskItem);
+
+            inputElement.value = '';
+            saveCurrentCanvasCalendar();
+
+            // Attach click event
+            taskSpan.addEventListener('click', handleClickCalendar);
+        }
+
+        function checkWorkBlockCompletion(workBlock) {
+            const tasks = workBlock.querySelectorAll('.work-block-tasks .clickable');
+            const completedTasks = workBlock.querySelectorAll('.work-block-tasks .clickable.completed');
+
+            const title = workBlock.querySelector('.work-block-title');
+
+            if (tasks.length > 0 && tasks.length === completedTasks.length) {
+                title.classList.add('completed');
+                workBlock.classList.add('greyed-out');
+            } else {
+                title.classList.remove('completed');
+                workBlock.classList.remove('greyed-out');
+            }
+        }
     </script>
 
     <!-- Timer View Scripts -->
@@ -1166,10 +1208,10 @@
             ctxTimer.clearRect(0, 0, canvasTimer.width, canvasTimer.height);
             ctxTimer.save();
             ctxTimer.translate(canvasTimer.width / 2, canvasTimer.height / 2);
-            
+
             const time = Date.now() * 0.0005;
             const radius = 135;
-            
+
             ctxTimer.beginPath();
             for (let i = 0; i < 36; i++) {
                 const angleDeg = i * 10;
@@ -1179,17 +1221,17 @@
                 const nextAngleRad = angleRad + time * 1.44;
                 const nextX = radius * Math.cos(nextAngleRad);
                 const nextY = radius * Math.sin(nextAngleRad);
-                
+
                 ctxTimer.moveTo(x, y);
                 ctxTimer.lineTo(nextX, nextY);
-                
+
                 ctxTimer.strokeStyle = `rgba(255, 255, 255, ${0.1 + 0.2 * Math.sin(time + i * 0.2)})`;
                 ctxTimer.lineWidth = 1.5;
                 ctxTimer.stroke();
             }
-            
+
             ctxTimer.restore();
-            
+
             animationFrameTimer = requestAnimationFrame(animateConnectingCircleTimer);
         }
 
@@ -1207,7 +1249,7 @@
         setRotationTimer(0);
         setProgressTimer(0);
         timerDurationTimer = maxDurationsTimer[currentModeTimer];
-        updateCurrentTimeTimer();
+        updateCurrentTimeTimer();https://github.com/MoHaulik/kalender/blob/main/index.html
         setInterval(updateCurrentTimeTimer, 1000);
     </script>
 
