@@ -379,6 +379,66 @@
                 height: 12px;
             }
         }
+
+        /* Work Block Styles */
+        .work-block {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: background 0.3s ease;
+        }
+
+        .work-block-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .work-block.completed .work-block-title {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .work-block.completed {
+            background: rgba(200, 200, 200, 0.5);
+        }
+
+        .work-block-tasks {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .work-block-tasks li {
+            margin-bottom: 5px;
+        }
+
+        .work-block.color1 {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.6), rgba(255, 105, 180, 0.6));
+        }
+
+        .work-block.color2 {
+            background: linear-gradient(135deg, rgba(135, 206, 235, 0.6), rgba(0, 191, 255, 0.6));
+        }
+
+        .work-block.color3 {
+            background: linear-gradient(135deg, rgba(152, 251, 152, 0.6), rgba(50, 205, 50, 0.6));
+        }
+
+        .task-input {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 5px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .task-input::placeholder {
+            color: rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -599,6 +659,17 @@
             dateElementCalendar.innerText = currentDay;
             monthNameElementCalendar.innerText = danishMonthsCalendar[currentMonth];
             editorCalendar.innerHTML = canvasesCalendar[currentCanvasIndexCalendar];
+
+            // Check if it's a weekday (Monday to Friday)
+            if (date.getDay() >= 1 && date.getDay() <= 5) {
+                // Check if the Work Blocks are already present
+                if (!editorCalendar.querySelector('.work-block')) {
+                    // Insert the Work Blocks
+                    insertWorkBlocks();
+                    // Add event listeners to the task inputs
+                    addTaskInputListeners();
+                }
+            }
         }
 
         function saveCurrentCanvasCalendar() {
@@ -660,6 +731,20 @@
                     // Display a random congratulatory message
                     displayCongratulatoryMessageCalendar();
                 }
+
+                // Check if all tasks under the parent Work Block are completed
+                const workBlock = event.target.closest('.work-block');
+                if (workBlock) {
+                    const tasks = workBlock.querySelectorAll('.clickable');
+                    const completedTasks = workBlock.querySelectorAll('.clickable.completed');
+                    if (tasks.length === completedTasks.length && tasks.length > 0) {
+                        // All tasks are completed
+                        workBlock.classList.add('completed');
+                    } else {
+                        workBlock.classList.remove('completed');
+                    }
+                }
+
                 // Save the updated content after toggling
                 saveCurrentCanvasCalendar();
             }
@@ -833,6 +918,42 @@
                 showNextCanvasCalendar();
             }
         });
+
+        function insertWorkBlocks() {
+            const workBlock1 = createWorkBlock('wb1', 'Work Block 1', 'color1');
+            const workBlock2 = createWorkBlock('wb2', 'Work Block 2', 'color2');
+            const workBlock3 = createWorkBlock('wb3', 'Work Block 3', 'color3');
+            editorCalendar.innerHTML += workBlock1 + workBlock2 + workBlock3;
+        }
+
+        function createWorkBlock(id, title, colorClass) {
+            return `
+            <div class="work-block ${colorClass}" data-id="${id}">
+                <div class="work-block-title">${title}</div>
+                <ul class="work-block-tasks">
+                    <!-- Sub-tasks will be added here -->
+                </ul>
+                <input type="text" class="task-input" placeholder="Add a task...">
+            </div>`;
+        }
+
+        function addTaskInputListeners() {
+            const taskInputs = editorCalendar.querySelectorAll('.task-input');
+            taskInputs.forEach(input => {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && this.value.trim() !== '') {
+                        e.preventDefault();
+                        const taskText = this.value.trim();
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span class="clickable">${taskText}</span>`;
+                        const tasksList = this.previousElementSibling; // the UL
+                        tasksList.appendChild(li);
+                        this.value = '';
+                        saveCurrentCanvasCalendar();
+                    }
+                });
+            });
+        }
 
         setCurrentCanvasIndexCalendar();
         updateEditorCalendar();
