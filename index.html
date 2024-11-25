@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Calendar and To-Do List with Work Blocks</title>
+    <title>Calendar, To-Do List, Timer, and Live Text Copier with Firebase Integration</title>
     <style>
         /* Shared Styles */
         body, html {
@@ -449,6 +449,123 @@
                 background-position: 0% 50%;
             }
         }
+
+        /* Live Text Copier Styles */
+        /* Styles from the second HTML code */
+        /* Adjusted to match the main app's styles */
+
+        /* Main Container for Live Text Copier */
+        .text-copier-container {
+            position: relative;
+            width: 90%;
+            max-width: 700px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 20px;
+        }
+
+        /* Textarea */
+        .text-copier-container textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: none;
+            outline: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            color: rgba(0, 0, 0, 0.8);
+            resize: none;
+        }
+
+        .text-copier-container textarea::placeholder {
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Buttons */
+        .text-copier-container button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .text-copier-container button:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        .text-copier-container button:active {
+            transform: scale(0.98);
+        }
+
+        /* Status message */
+        #status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Gear (Settings) */
+        .settings-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .settings-button:hover {
+            transform: rotate(30deg);
+        }
+
+        .settings-button::before {
+            content: "\2699"; /* Unicode for gear icon */
+            font-size: 24px;
+            color: black;
+        }
+
+        /* Settings Menu */
+        .settings-menu {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .settings-menu.active {
+            display: flex;
+        }
+
+        .settings-menu button {
+            width: 100%;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -517,10 +634,28 @@
         </div>
     </div>
 
+    <!-- Live Text Copier View -->
+    <div class="view-container" id="text-copier-view">
+        <div class="text-copier-container">
+            <button id="loginButton">Log ind med Google</button>
+            <textarea id="textInput" placeholder="Skriv noget her..."></textarea>
+            <button onclick="copyText()">Kopier</button>
+            <p id="status"></p>
+
+            <!-- Gear (Settings) -->
+            <div class="settings-button" id="settingsButton"></div>
+            <div class="settings-menu" id="settingsMenu">
+                <button id="toggleLoginButton">Skjul Log ind</button>
+                <button id="fullscreenButton">Fuldskærm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation Buttons -->
     <div class="nav-button-container">
         <div class="nav-button active" id="btn-calendar" aria-label="Calendar View"></div>
         <div class="nav-button" id="btn-timer" aria-label="Timer View"></div>
+        <div class="nav-button" id="btn-text-copier" aria-label="Text Copier View"></div>
     </div>
 
     <!-- Calendar View Scripts -->
@@ -1021,8 +1156,6 @@
 
     <!-- Timer View Scripts -->
     <script>
-        // Your existing Timer View Scripts remain unchanged
-        // (Include your full Timer script here)
         // Timer Variables
         const knobTimer = document.querySelector('#timer-view .knob');
         const displayTimer = document.querySelector('#timer-view .display');
@@ -1272,12 +1405,167 @@
         setInterval(updateCurrentTimeTimer, 1000);
     </script>
 
+    <!-- Firebase and Live Text Copier Scripts -->
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoY_XxClJRTUS6OJmaIDvZm014Lx7sXA4",
+            authDomain: "copypaste2000-5776c.firebaseapp.com",
+            databaseURL: "https://copypaste2000-5776c-default-rtdb.firebaseio.com",
+            projectId: "copypaste2000-5776c",
+            storageBucket: "copypaste2000-5776c.appspot.com",
+            messagingSenderId: "733249598043",
+            appId: "1:733249598043:web:6648bfe9b408127aa6457e",
+            measurementId: "G-M16KES53R6"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Live Text Copier Functionality
+        const textRef = database.ref('sharedText');
+        const textArea = document.getElementById('textInput');
+
+        // Google Sign-in with Popup
+        document.getElementById('loginButton').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log("Bruger logget ind:", result.user.displayName);
+                    alert(`Velkommen, ${result.user.displayName}!`);
+                })
+                .catch((error) => {
+                    console.error("Login-fejl:", error.message);
+                    alert("Login fejlede: " + error.message);
+                });
+        });
+
+        // Listen for changes and update the textarea
+        textRef.on('value', (snapshot) => {
+            const text = snapshot.val();
+            textArea.value = text || '';
+        });
+
+        // Update the database when the textarea content changes
+        textArea.addEventListener('input', () => {
+            const value = textArea.value;
+            textRef.set(value);
+        });
+
+        // Copy text to clipboard
+        function copyText() {
+            textArea.select();
+            document.execCommand('copy');
+            document.getElementById('status').innerText = "Tekst kopieret!";
+            setTimeout(() => {
+                document.getElementById('status').innerText = "";
+            }, 2000);
+        }
+
+        // Settings Menu Functionality
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const loginButton = document.getElementById('loginButton');
+        const toggleLoginButton = document.getElementById('toggleLoginButton');
+        const fullscreenButton = document.getElementById('fullscreenButton');
+
+        // Show/hide settings menu
+        settingsButton.addEventListener('click', () => {
+            settingsMenu.classList.toggle('active');
+        });
+
+        // Show/hide login button
+        toggleLoginButton.addEventListener('click', () => {
+            if (loginButton.style.display === 'none') {
+                loginButton.style.display = 'block';
+                toggleLoginButton.textContent = 'Skjul Log ind';
+            } else {
+                loginButton.style.display = 'none';
+                toggleLoginButton.textContent = 'Vis Log ind';
+            }
+        });
+
+        // Fullscreen functionality
+        fullscreenButton.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Integrate Firebase with To-Do List
+        // Modify the to-do list code to save and load content from Firebase
+
+        // Assuming that the to-do list content is in 'editorCalendar' element
+        const toDoRef = database.ref('toDoList');
+
+        // Load to-do list content from Firebase
+        toDoRef.on('value', (snapshot) => {
+            const content = snapshot.val();
+            if (content) {
+                editorCalendar.innerHTML = content;
+            }
+        });
+
+        // Save to-do list content to Firebase when it changes
+        editorCalendar.addEventListener('input', () => {
+            const content = editorCalendar.innerHTML;
+            toDoRef.set(content);
+        });
+
+        // Similarly, we can save Work Blocks content
+        const workBlocksRef = database.ref('workBlocks');
+
+        function saveWorkBlocksToFirebase() {
+            const workBlocksData = {
+                block1: workBlockElements.block1.innerHTML,
+                block2: workBlockElements.block2.innerHTML,
+                block3: workBlockElements.block3.innerHTML,
+                title1: workBlockElements.title1.innerText,
+                title2: workBlockElements.title2.innerText,
+                title3: workBlockElements.title3.innerText
+            };
+            workBlocksRef.set(workBlocksData);
+        }
+
+        // Load Work Blocks content from Firebase
+        workBlocksRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                workBlockElements.block1.innerHTML = data.block1 || '';
+                workBlockElements.block2.innerHTML = data.block2 || '';
+                workBlockElements.block3.innerHTML = data.block3 || '';
+                workBlockElements.title1.innerText = data.title1 || 'Work Block 1';
+                workBlockElements.title2.innerText = data.title2 || 'Work Block 2';
+                workBlockElements.title3.innerText = data.title3 || 'Work Block 3';
+            }
+        });
+
+        // Save Work Blocks content when it changes
+        [workBlockElements.block1, workBlockElements.block2, workBlockElements.block3, workBlockElements.title1, workBlockElements.title2, workBlockElements.title3].forEach(element => {
+            element.addEventListener('input', saveWorkBlocksToFirebase);
+        });
+
+    </script>
+
     <!-- Navigation Script -->
     <script>
         const btnCalendar = document.getElementById('btn-calendar');
         const btnTimer = document.getElementById('btn-timer');
+        const btnTextCopier = document.getElementById('btn-text-copier');
         const calendarView = document.getElementById('calendar-view');
         const timerView = document.getElementById('timer-view');
+        const textCopierView = document.getElementById('text-copier-view');
         const navButtons = document.querySelectorAll('.nav-button');
 
         btnCalendar.addEventListener('click', () => {
@@ -1288,22 +1576,34 @@
             showView('timer');
         });
 
+        btnTextCopier.addEventListener('click', () => {
+            showView('text-copier');
+        });
+
         function showView(view) {
             if (view === 'calendar') {
                 calendarView.classList.add('active-view');
                 timerView.classList.remove('active-view');
+                textCopierView.classList.remove('active-view');
                 btnCalendar.classList.add('active');
                 btnTimer.classList.remove('active');
+                btnTextCopier.classList.remove('active');
             } else if (view === 'timer') {
                 timerView.classList.add('active-view');
                 calendarView.classList.remove('active-view');
+                textCopierView.classList.remove('active-view');
                 btnTimer.classList.add('active');
                 btnCalendar.classList.remove('active');
+                btnTextCopier.classList.remove('active');
+            } else if (view === 'text-copier') {
+                textCopierView.classList.add('active-view');
+                calendarView.classList.remove('active-view');
+                timerView.classList.remove('active-view');
+                btnTextCopier.classList.add('active');
+                btnCalendar.classList.remove('active');
+                btnTimer.classList.remove('active');
             }
         }
-
-        // Optional: Allow keyboard navigation (e.g., using Tab or other keys)
-        // You can add more event listeners here if needed.
     </script>
 </body>
 </html>
