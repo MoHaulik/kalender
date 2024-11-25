@@ -659,7 +659,126 @@
     </div>
 
     <!-- Calendar View Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
+
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoY_XxClJRTUS6OJmaIDvZm014Lx7sXA4",
+            authDomain: "copypaste2000-5776c.firebaseapp.com",
+            databaseURL: "https://copypaste2000-5776c-default-rtdb.firebaseio.com",
+            projectId: "copypaste2000-5776c",
+            storageBucket: "copypaste2000-5776c.appspot.com",
+            messagingSenderId: "733249598043",
+            appId: "1:733249598043:web:6648bfe9b408127aa6457e",
+            measurementId: "G-M16KES53R6"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        let userId = null; // Placeholder for user ID after login
+
+        // Google Sign-in with Popup
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log("User signed in:", result.user.displayName);
+                    userId = result.user.uid; // Save the user's UID
+                    // After login, load the to-do list and Work Blocks from Firebase
+                    loadDataFromFirebase();
+                })
+                .catch((error) => {
+                    console.error("Login error:", error.message);
+                    alert("Login failed: " + error.message);
+                });
+        }
+
+        // Automatically sign in the user on app start
+        document.addEventListener('DOMContentLoaded', () => {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    userId = user.uid;
+                    loadDataFromFirebase();
+                } else {
+                    // If not logged in, sign in with Google
+                    signInWithGoogle();
+                }
+            });
+        });
+
+        // Function to load data from Firebase
+        function loadDataFromFirebase() {
+            if (!userId) return;
+
+            const dateKey = canvasKeysCalendar[currentCanvasIndexCalendar];
+
+            // Load to-do list
+            const toDoRef = database.ref(`users/${userId}/toDoList/${dateKey}`);
+            toDoRef.on('value', (snapshot) => {
+                const content = snapshot.val();
+                if (content) {
+                    editorCalendar.innerHTML = content;
+                } else {
+                    editorCalendar.innerHTML = '';
+                }
+            });
+
+            // Load Work Blocks
+            const workBlocksRef = database.ref(`users/${userId}/workBlocks/${dateKey}`);
+            workBlocksRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    workBlockElements.block1.innerHTML = data.block1 || '';
+                    workBlockElements.block2.innerHTML = data.block2 || '';
+                    workBlockElements.block3.innerHTML = data.block3 || '';
+                    workBlockElements.title1.innerText = data.title1 || 'Work Block 1';
+                    workBlockElements.title2.innerText = data.title2 || 'Work Block 2';
+                    workBlockElements.title3.innerText = data.title3 || 'Work Block 3';
+                } else {
+                    // If no data, initialize with default values
+                    workBlockElements.block1.innerHTML = '';
+                    workBlockElements.block2.innerHTML = '';
+                    workBlockElements.block3.innerHTML = '';
+                    workBlockElements.title1.innerText = 'Work Block 1';
+                    workBlockElements.title2.innerText = 'Work Block 2';
+                    workBlockElements.title3.innerText = 'Work Block 3';
+                }
+                // Check if Work Blocks are completed
+                Object.values(workBlockElements.blocks).forEach(blockElement => {
+                    checkWorkBlockCompletion(blockElement.parentNode);
+                });
+            });
+        }
+
+        // Function to save current canvas data to Firebase
+        function saveCurrentCanvasCalendar() {
+            if (!userId) return; // Ensure user is logged in
+
+            const dateKey = canvasKeysCalendar[currentCanvasIndexCalendar];
+
+            // Save to-do list
+            const toDoRef = database.ref(`users/${userId}/toDoList/${dateKey}`);
+            toDoRef.set(editorCalendar.innerHTML);
+
+            // Save Work Blocks
+            const workBlocksRef = database.ref(`users/${userId}/workBlocks/${dateKey}`);
+            const workBlocksData = {
+                block1: workBlockElements.block1.innerHTML,
+                block2: workBlockElements.block2.innerHTML,
+                block3: workBlockElements.block3.innerHTML,
+                title1: workBlockElements.title1.innerText,
+                title2: workBlockElements.title2.innerText,
+                title3: workBlockElements.title3.innerText
+            };
+            workBlocksRef.set(workBlocksData);
+        }
+
         // Calendar Variables
         const editorCalendar = document.getElementById('editor-calendar');
         const dayNameElementCalendar = document.getElementById('day-name-calendar');
@@ -772,63 +891,6 @@
         const hoverSoundCalendar = new Audio('Hover.wav');
         const clickSoundCalendar = new Audio('click.mp3');
 
-        // Load canvases from localStorage or initialize them
-        const canvasesCalendar = canvasKeysCalendar.map(key => localStorage.getItem(key) || '');
-
-        // Load messages from messages.json
-        let greetingsCalendar = {
-            morning: [],
-            afternoon: [],
-            evening: []
-        };
-        let congratulatoryMessagesCalendar = [];
-
-        fetch('messages.json')
-            .then(response => response.json())
-            .then(data => {
-                greetingsCalendar = data.greetings;
-                congratulatoryMessagesCalendar = data.congratulations;
-                // After loading messages, set the initial greeting
-                selectGreetingCalendar();
-            })
-            .catch(error => {
-                console.error('Error fetching messages:', error);
-                // Fallback greeting messages in case of error
-                greetingsCalendar.morning = [
-                    "Morning, Mr. M! How about we kick things off with today’s game plan?",
-                    "Good morning, Mr. M! Let’s set our sights on a productive day!"
-                ];
-                greetingsCalendar.afternoon = [
-                    "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
-                    "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
-                ];
-                greetingsCalendar.evening = [
-                    "Good evening, Mr. M! Shall we go over the day's accomplishments?",
-                    "Hey Mr. M! Let’s recap and prep for tomorrow!"
-                ];
-                selectGreetingCalendar();
-            });
-
-        // Work Blocks Variables
-        const workBlockKeys = canvasKeysCalendar.map(key => ({
-            title1: `${key}-workBlockTitle1`,
-            title2: `${key}-workBlockTitle2`,
-            title3: `${key}-workBlockTitle3`,
-            block1: `${key}-workBlock1`,
-            block2: `${key}-workBlock2`,
-            block3: `${key}-workBlock3`
-        }));
-
-        // Arrays to store the content
-        const workBlocksContent = canvasKeysCalendar.map(key => ({
-            title1: localStorage.getItem(`${key}-workBlockTitle1`) || 'Work Block 1',
-            title2: localStorage.getItem(`${key}-workBlockTitle2`) || 'Work Block 2',
-            title3: localStorage.getItem(`${key}-workBlockTitle3`) || 'Work Block 3',
-            block1: localStorage.getItem(`${key}-workBlock1`) || '',
-            block2: localStorage.getItem(`${key}-workBlock2`) || '',
-            block3: localStorage.getItem(`${key}-workBlock3`) || ''
-        }));
-
         function updateEditorCalendar() {
             let currentDay = startDateCalendar;
             let currentMonth = startMonthCalendar;
@@ -843,53 +905,9 @@
             dayNameElementCalendar.innerText = danishDaysCalendar[date.getDay()];
             dateElementCalendar.innerText = currentDay;
             monthNameElementCalendar.innerText = danishMonthsCalendar[currentMonth];
-            editorCalendar.innerHTML = canvasesCalendar[currentCanvasIndexCalendar];
 
-            // Load Work Blocks content
-            workBlockElements.block1.innerHTML = workBlocksContent[currentCanvasIndexCalendar].block1;
-            workBlockElements.block2.innerHTML = workBlocksContent[currentCanvasIndexCalendar].block2;
-            workBlockElements.block3.innerHTML = workBlocksContent[currentCanvasIndexCalendar].block3;
-
-            // Load Work Block titles
-            workBlockElements.title1.innerText = workBlocksContent[currentCanvasIndexCalendar].title1;
-            workBlockElements.title2.innerText = workBlocksContent[currentCanvasIndexCalendar].title2;
-            workBlockElements.title3.innerText = workBlocksContent[currentCanvasIndexCalendar].title3;
-
-            // Check if Work Blocks are completed
-            Object.values(workBlockElements.blocks).forEach(blockElement => {
-                checkWorkBlockCompletion(blockElement.parentNode);
-            });
-        }
-
-        function saveCurrentCanvasCalendar() {
-            canvasesCalendar[currentCanvasIndexCalendar] = editorCalendar.innerHTML;
-            localStorage.setItem(canvasKeysCalendar[currentCanvasIndexCalendar], editorCalendar.innerHTML);
-
-            // Save Work Blocks content
-            workBlocksContent[currentCanvasIndexCalendar].block1 = workBlockElements.block1.innerHTML;
-            workBlocksContent[currentCanvasIndexCalendar].block2 = workBlockElements.block2.innerHTML;
-            workBlocksContent[currentCanvasIndexCalendar].block3 = workBlockElements.block3.innerHTML;
-
-            workBlocksContent[currentCanvasIndexCalendar].title1 = workBlockElements.title1.innerText;
-            workBlocksContent[currentCanvasIndexCalendar].title2 = workBlockElements.title2.innerText;
-            workBlocksContent[currentCanvasIndexCalendar].title3 = workBlockElements.title3.innerText;
-
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].block1, workBlockElements.block1.innerHTML);
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].block2, workBlockElements.block2.innerHTML);
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].block3, workBlockElements.block3.innerHTML);
-
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title1, workBlockElements.title1.innerText);
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title2, workBlockElements.title2.innerText);
-            localStorage.setItem(workBlockKeys[currentCanvasIndexCalendar].title3, workBlockElements.title3.innerText);
-        }
-
-        function translateTextCalendar(text) {
-            // Adjusted translation to avoid interfering with '.'
-            return text
-                .replace(/;/g, 'æ')
-                .replace(/'/g, 'ø')
-                .replace(/\[/g, 'å');
-                // Removed the regex that replaces two digits with a dot
+            // After updating the date, load data from Firebase
+            loadDataFromFirebase();
         }
 
         function setCurrentCanvasIndexCalendar() {
@@ -904,14 +922,14 @@
 
         function showPreviousCanvasCalendar() {
             saveCurrentCanvasCalendar();
-            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === 0) ? canvasesCalendar.length - 1 : currentCanvasIndexCalendar - 1;
+            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === 0) ? canvasKeysCalendar.length - 1 : currentCanvasIndexCalendar - 1;
             hoverSoundCalendar.play();
             updateEditorCalendar();
         }
 
         function showNextCanvasCalendar() {
             saveCurrentCanvasCalendar();
-            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === canvasesCalendar.length - 1) ? 0 : currentCanvasIndexCalendar + 1;
+            currentCanvasIndexCalendar = (currentCanvasIndexCalendar === canvasKeysCalendar.length - 1) ? 0 : currentCanvasIndexCalendar + 1;
             hoverSoundCalendar.play();
             updateEditorCalendar();
         }
@@ -1151,6 +1169,41 @@
 
         setCurrentCanvasIndexCalendar();
         updateEditorCalendar();
+
+        // Load messages from messages.json
+        let greetingsCalendar = {
+            morning: [],
+            afternoon: [],
+            evening: []
+        };
+        let congratulatoryMessagesCalendar = [];
+
+        fetch('messages.json')
+            .then(response => response.json())
+            .then(data => {
+                greetingsCalendar = data.greetings;
+                congratulatoryMessagesCalendar = data.congratulations;
+                // After loading messages, set the initial greeting
+                selectGreetingCalendar();
+            })
+            .catch(error => {
+                console.error('Error fetching messages:', error);
+                // Fallback greeting messages in case of error
+                greetingsCalendar.morning = [
+                    "Morning, Mr. M! How about we kick things off with today’s game plan?",
+                    "Good morning, Mr. M! Let’s set our sights on a productive day!"
+                ];
+                greetingsCalendar.afternoon = [
+                    "Good afternoon, Mr. M! How’s the day going? Ready to map out what's next?",
+                    "Hey Mr. M! Let’s take a quick look at the afternoon's plan."
+                ];
+                greetingsCalendar.evening = [
+                    "Good evening, Mr. M! Shall we go over the day's accomplishments?",
+                    "Hey Mr. M! Let’s recap and prep for tomorrow!"
+                ];
+                selectGreetingCalendar();
+            });
+
         // Greeting is set after messages are fetched
     </script>
 
@@ -1405,32 +1458,8 @@
         setInterval(updateCurrentTimeTimer, 1000);
     </script>
 
-    <!-- Firebase and Live Text Copier Scripts -->
-    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
-
-    <!-- Add Firebase products that you want to use -->
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
-
+    <!-- Live Text Copier Scripts -->
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAoY_XxClJRTUS6OJmaIDvZm014Lx7sXA4",
-            authDomain: "copypaste2000-5776c.firebaseapp.com",
-            databaseURL: "https://copypaste2000-5776c-default-rtdb.firebaseio.com",
-            projectId: "copypaste2000-5776c",
-            storageBucket: "copypaste2000-5776c.appspot.com",
-            messagingSenderId: "733249598043",
-            appId: "1:733249598043:web:6648bfe9b408127aa6457e",
-            measurementId: "G-M16KES53R6"
-        };
-
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
-
         // Live Text Copier Functionality
         const textRef = database.ref('sharedText');
         const textArea = document.getElementById('textInput');
@@ -1502,60 +1531,6 @@
                 document.exitFullscreen();
             }
         });
-
-        // Integrate Firebase with To-Do List
-        // Modify the to-do list code to save and load content from Firebase
-
-        // Assuming that the to-do list content is in 'editorCalendar' element
-        const toDoRef = database.ref('toDoList');
-
-        // Load to-do list content from Firebase
-        toDoRef.on('value', (snapshot) => {
-            const content = snapshot.val();
-            if (content) {
-                editorCalendar.innerHTML = content;
-            }
-        });
-
-        // Save to-do list content to Firebase when it changes
-        editorCalendar.addEventListener('input', () => {
-            const content = editorCalendar.innerHTML;
-            toDoRef.set(content);
-        });
-
-        // Similarly, we can save Work Blocks content
-        const workBlocksRef = database.ref('workBlocks');
-
-        function saveWorkBlocksToFirebase() {
-            const workBlocksData = {
-                block1: workBlockElements.block1.innerHTML,
-                block2: workBlockElements.block2.innerHTML,
-                block3: workBlockElements.block3.innerHTML,
-                title1: workBlockElements.title1.innerText,
-                title2: workBlockElements.title2.innerText,
-                title3: workBlockElements.title3.innerText
-            };
-            workBlocksRef.set(workBlocksData);
-        }
-
-        // Load Work Blocks content from Firebase
-        workBlocksRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                workBlockElements.block1.innerHTML = data.block1 || '';
-                workBlockElements.block2.innerHTML = data.block2 || '';
-                workBlockElements.block3.innerHTML = data.block3 || '';
-                workBlockElements.title1.innerText = data.title1 || 'Work Block 1';
-                workBlockElements.title2.innerText = data.title2 || 'Work Block 2';
-                workBlockElements.title3.innerText = data.title3 || 'Work Block 3';
-            }
-        });
-
-        // Save Work Blocks content when it changes
-        [workBlockElements.block1, workBlockElements.block2, workBlockElements.block3, workBlockElements.title1, workBlockElements.title2, workBlockElements.title3].forEach(element => {
-            element.addEventListener('input', saveWorkBlocksToFirebase);
-        });
-
     </script>
 
     <!-- Navigation Script -->
