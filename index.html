@@ -451,6 +451,7 @@
         }
 
         /* Live Text Copier Styles */
+        /* Styles from the second HTML code */
         /* Adjusted to match the main app's styles */
 
         /* Main Container for Live Text Copier */
@@ -662,8 +663,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
 
-    <!-- Firebase Configuration and Initialization -->
-   <script>
+    <!-- Calendar View Scripts -->
+    <script>
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAoY_XxClJRTUS6OJmaIDvZm014Lx7sXA4",
@@ -674,15 +675,117 @@
             messagingSenderId: "733249598043",
             appId: "1:733249598043:web:6648bfe9b408127aa6457e",
             measurementId: "G-M16KES53R6"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
-    </script>
 
-    <!-- Calendar View Scripts -->
-    <script>
+        let userId = null; // Placeholder for user ID after login
+
+        // Google Sign-in with Popup
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log("User signed in:", result.user.displayName);
+                    userId = result.user.uid; // Save the user's UID
+                    // After login, load the to-do list and Work Blocks from Firebase
+                    loadDataFromFirebase();
+                })
+                .catch((error) => {
+                    console.error("Login error:", error.message);
+                    alert("Login failed: " + error.message);
+                });
+        }
+
+        // Automatically sign in the user on app start
+        document.addEventListener('DOMContentLoaded', () => {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    userId = user.uid;
+                    loadDataFromFirebase();
+                } else {
+                    // If not logged in, sign in with Google
+                    signInWithGoogle();
+                }
+            });
+        });
+
+        // Function to load data from Firebase
+        function loadDataFromFirebase() {
+            if (!userId) return;
+
+            const dateKey = canvasKeysCalendar[currentCanvasIndexCalendar];
+
+            // Load to-do list
+            const toDoRef = database.ref(`users/${userId}/toDoList/${dateKey}`);
+            toDoRef.once('value', (snapshot) => {
+                const content = snapshot.val();
+                if (content) {
+                    editorCalendar.innerHTML = content;
+                } else {
+                    editorCalendar.innerHTML = '';
+                }
+            });
+
+            // Load Work Blocks
+            const workBlocksRef = database.ref(`users/${userId}/workBlocks/${dateKey}`);
+            workBlocksRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    workBlockElements.block1.innerHTML = data.block1 || '';
+                    workBlockElements.block2.innerHTML = data.block2 || '';
+                    workBlockElements.block3.innerHTML = data.block3 || '';
+                    workBlockElements.title1.innerText = data.title1 || 'Work Block 1';
+                    workBlockElements.title2.innerText = data.title2 || 'Work Block 2';
+                    workBlockElements.title3.innerText = data.title3 || 'Work Block 3';
+                } else {
+                    // If no data, initialize with default values
+                    workBlockElements.block1.innerHTML = '';
+                    workBlockElements.block2.innerHTML = '';
+                    workBlockElements.block3.innerHTML = '';
+                    workBlockElements.title1.innerText = 'Work Block 1';
+                    workBlockElements.title2.innerText = 'Work Block 2';
+                    workBlockElements.title3.innerText = 'Work Block 3';
+                }
+                // Check if Work Blocks are completed
+                Object.values(workBlockElements.blocks).forEach(blockElement => {
+                    checkWorkBlockCompletion(blockElement.parentNode);
+                });
+            });
+        }
+
+        // Function to save current canvas data to Firebase
+        function saveCurrentCanvasCalendar() {
+            if (!userId) return; // Ensure user is logged in
+
+            const dateKey = canvasKeysCalendar[currentCanvasIndexCalendar];
+
+            // Save to-do list
+            const toDoRef = database.ref(`users/${userId}/toDoList/${dateKey}`);
+            toDoRef.set(editorCalendar.innerHTML);
+
+            // Save Work Blocks
+            const workBlocksRef = database.ref(`users/${userId}/workBlocks/${dateKey}`);
+            const workBlocksData = {
+                block1: workBlockElements.block1.innerHTML,
+                block2: workBlockElements.block2.innerHTML,
+                block3: workBlockElements.block3.innerHTML,
+                title1: workBlockElements.title1.innerText,
+                title2: workBlockElements.title2.innerText,
+                title3: workBlockElements.title3.innerText
+            };
+            workBlocksRef.set(workBlocksData);
+        }
+
+        // Save data every minute
+        setInterval(saveCurrentCanvasCalendar, 60000);
+
+        // Call save function when the window is about to unload
+        window.addEventListener('beforeunload', saveCurrentCanvasCalendar);
+
         // Calendar Variables
         const editorCalendar = document.getElementById('editor-calendar');
         const dayNameElementCalendar = document.getElementById('day-name-calendar');
@@ -794,111 +897,6 @@
 
         const hoverSoundCalendar = new Audio('Hover.wav');
         const clickSoundCalendar = new Audio('click.mp3');
-
-        // Firebase Variables
-        let userId = null; // Placeholder for user ID after login
-
-        // Google Sign-in with Popup
-        function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then((result) => {
-                    console.log("User signed in:", result.user.displayName);
-                    userId = result.user.uid; // Save the user's UID
-                    // After login, load the to-do list and Work Blocks from Firebase
-                    loadDataFromFirebase();
-                })
-                .catch((error) => {
-                    console.error("Login error:", error.message);
-                    alert("Login failed: " + error.message);
-                });
-        }
-
-        // Automatically sign in the user on app start
-        document.addEventListener('DOMContentLoaded', () => {
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    userId = user.uid;
-                    loadDataFromFirebase();
-                } else {
-                    // If not logged in, sign in with Google
-                    signInWithGoogle();
-                }
-            });
-        });
-
-        // Function to load data from Firebase
-        function loadDataFromFirebase() {
-            if (!userId) return;
-
-            const dateKey = canvasKeysCalendar[currentCanvasIndexCalendar];
-
-            // Load to-do list
-            const toDoRef = database.ref(`users/${userId}/toDoList/${dateKey}`);
-            toDoRef.once('value', (snapshot) => {
-                const content = snapshot.val();
-                if (content) {
-                    editorCalendar.innerHTML = content;
-                } else {
-                    editorCalendar.innerHTML = '';
-                }
-            });
-
-            // Load Work Blocks
-            const workBlocksRef = database.ref(`users/${userId}/workBlocks/${dateKey}`);
-            workBlocksRef.once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    workBlockElements.block1.innerHTML = data.block1 || '';
-                    workBlockElements.block2.innerHTML = data.block2 || '';
-                    workBlockElements.block3.innerHTML = data.block3 || '';
-                    workBlockElements.title1.innerText = data.title1 || 'Work Block 1';
-                    workBlockElements.title2.innerText = data.title2 || 'Work Block 2';
-                    workBlockElements.title3.innerText = data.title3 || 'Work Block 3';
-                } else {
-                    // If no data, initialize with default values
-                    workBlockElements.block1.innerHTML = '';
-                    workBlockElements.block2.innerHTML = '';
-                    workBlockElements.block3.innerHTML = '';
-                    workBlockElements.title1.innerText = 'Work Block 1';
-                    workBlockElements.title2.innerText = 'Work Block 2';
-                    workBlockElements.title3.innerText = 'Work Block 3';
-                }
-                // Check if Work Blocks are completed
-                Object.values(workBlockElements.blocks).forEach(blockElement => {
-                    checkWorkBlockCompletion(blockElement.parentNode);
-                });
-            });
-        }
-
-        // Function to save current canvas data to Firebase
-        function saveCurrentCanvasCalendar() {
-            if (!userId) return; // Ensure user is logged in
-
-            const dateKey = canvasKeysCalendar[currentCanvasIndexCalendar];
-
-            // Save to-do list
-            const toDoRef = database.ref(`users/${userId}/toDoList/${dateKey}`);
-            toDoRef.set(editorCalendar.innerHTML);
-
-            // Save Work Blocks
-            const workBlocksRef = database.ref(`users/${userId}/workBlocks/${dateKey}`);
-            const workBlocksData = {
-                block1: workBlockElements.block1.innerHTML,
-                block2: workBlockElements.block2.innerHTML,
-                block3: workBlockElements.block3.innerHTML,
-                title1: workBlockElements.title1.innerText,
-                title2: workBlockElements.title2.innerText,
-                title3: workBlockElements.title3.innerText
-            };
-            workBlocksRef.set(workBlocksData);
-        }
-
-        // Save data every minute
-        setInterval(saveCurrentCanvasCalendar, 60000);
-
-        // Call save function when the window is about to unload
-        window.addEventListener('beforeunload', saveCurrentCanvasCalendar);
 
         function updateEditorCalendar() {
             let currentDay = startDateCalendar;
