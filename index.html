@@ -1,748 +1,1208 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Calendar, To-Do List, Timer, and Live Text Copier with Firebase Integration</title><style>
-body,html{margin:0;padding:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;background:linear-gradient(135deg,#f5f7fa 0%,#e4e7eb 100%);overflow:hidden;display:flex;flex-direction:column}
-.view-container{flex:1;display:none;justify-content:center;align-items:center;flex-direction:column;gap:20px;position:relative;width:100%;height:100%}
-.active-view{display:flex}
-.calendar-container{position:relative;width:80%;max-width:600px;padding:20px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(31,38,135,0.15);display:flex;flex-direction:column;align-items:center;border-radius:20px;color:rgba(0,0,0,0.8);height:70%}
-#header-calendar{width:100%;display:flex;justify-content:space-between;align-items:flex-start;padding:10px;box-sizing:border-box;position:relative;flex-shrink:0}
-#date-container-calendar{text-align:left}
-#date-calendar,#day-name-calendar,#month-name-calendar{font-size:24px;margin:0;line-height:1.2;text-shadow:0 2px 10px rgba(0,0,0,0.1);cursor:pointer}
-#to-do-list-container{width:100%;overflow-y:auto;flex:1;padding:10px;box-sizing:border-box}
-#editor-calendar{width:100%;border:none;outline:none;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;font-size:26px;background:transparent;color:inherit;text-shadow:0 2px 10px rgba(0,0,0,0.05)}
-.clickable{cursor:pointer;transition:text-decoration 0.3s ease,color 0.3s ease}
-.clickable:hover{text-decoration:underline}
-.completed{text-decoration:line-through;color:gray;transition:text-decoration 0.3s ease,color 0.3s ease;animation:none;text-shadow:none}
-.need-to-do{animation:glow 1s ease-in-out infinite alternate}
-@keyframes glow{from{text-shadow:0 0 5px rgba(255,0,0,0.5)}to{text-shadow:0 0 20px rgba(255,0,0,1)}}
-.avatar-box{position:relative;width:80%;max-width:600px;padding:20px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(31,38,135,0.15);display:flex;align-items:center;border-radius:20px;gap:15px;cursor:pointer;flex-shrink:0}
-.avatar{width:60px;height:60px;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
-.avatar img{width:100%;height:100%;object-fit:cover}
-.text-bubble{position:relative;background:rgba(255,255,255,0.8);padding:10px 15px;border-radius:15px;color:rgba(0,0,0,0.8);box-shadow:0 2px 10px rgba(0,0,0,0.1);text-shadow:0 1px 5px rgba(0,0,0,0.05);flex-grow:1;transition:opacity 0.5s ease;opacity:1}
-.text-bubble.hidden{opacity:0}
-.fullscreen-button{position:absolute;top:10px;right:10px;background:white;border:none;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.2);cursor:pointer;opacity:0;transition:opacity 0.3s ease;z-index:10}
-.fullscreen-button.visible{opacity:1}
-.fullscreen-button::before{content:"\26F6";font-size:20px;color:black}
-.timer-container{position:relative;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(31,38,135,0.15);display:flex;justify-content:center;align-items:center}
-.progress-ring{position:absolute;top:0;left:0;width:100%;height:100%}
-.progress-ring circle{fill:none;stroke:rgba(255,255,255,0.3);stroke-width:8}
-.progress-ring .progress{stroke:rgba(255,255,255,0.8);stroke-linecap:round;transition:stroke-dashoffset 0.5s ease}
-.connecting-circle{position:absolute;top:0;left:0;width:100%;height:100%}
-.knob{width:60px;height:60px;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.9),rgba(255,255,255,0.4));border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.1);cursor:pointer;position:absolute;top:calc(50% - 30px);left:calc(50% - 30px);transition:box-shadow 0.3s ease;z-index:10}
-.knob:hover{box-shadow:0 0 20px rgba(255,255,255,0.5)}
-.knob:active{box-shadow:0 0 30px rgba(255,255,255,0.7)}
-.display{font-size:48px;color:rgba(255,255,255,0.9);text-shadow:0 2px 10px rgba(0,0,0,0.1);position:relative;z-index:5}
-.mode-indicators{position:absolute;width:100%;height:100%;z-index:10}
-.mode-indicator{position:absolute;width:10px;height:10px;background:rgba(255,255,255,0.5);border-radius:50%;transition:background 0.3s ease}
-.mode-indicator.active{background:rgba(255,255,255,0.9);box-shadow:0 0 10px rgba(255,255,255,0.5)}
-.mode-name{font-size:24px;color:rgba(255,255,255,0.9);text-shadow:0 2px 10px rgba(0,0,0,0.1);opacity:0;transition:opacity 0.3s ease;position:relative;z-index:5}
-.nav-button-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100}
-.nav-button{width:15px;height:15px;background:rgba(255,255,255,0.6);border-radius:50%;cursor:pointer;transition:background 0.3s ease}
-.nav-button.active{background:rgba(255,255,255,1);box-shadow:0 0 5px rgba(0,0,0,0.2)}
-@media (max-width:480px){.calendar-container,.avatar-box{width:90%;padding:15px}#date-calendar,#day-name-calendar,#month-name-calendar{font-size:20px}#editor-calendar{font-size:22px}.text-bubble{font-size:16px}.fullscreen-button{width:35px;height:35px;top:8px;right:8px}.fullscreen-button::before{font-size:18px}.timer-container{width:250px;height:250px}.display{font-size:36px}.mode-name{font-size:20px}.knob{width:50px;height:50px;top:calc(50% - 25px);left:calc(50% - 25px)}.nav-button{width:12px;height:12px}}
-#work-blocks-container{width:100%;margin-top:20px}
-.work-block{position:relative;padding:20px;margin-bottom:20px;border-radius:15px;overflow:hidden;transition:background 0.5s ease;background-size:600% 600%;animation:soap-bubble 10s ease infinite}
-.block-title{font-size:24px;font-weight:bold;margin-bottom:10px;cursor:text}
-.block-tasks{font-size:20px;min-height:50px}
-.work-block.completed .block-title{text-decoration:line-through;color:gray}
-.work-block.completed{background:rgba(200,200,200,0.5);animation:none}
-.work-block[data-block-index="1"]{background:linear-gradient(270deg,#ff7f50,#87cefa,#da70d6)}
-.work-block[data-block-index="2"]{background:linear-gradient(270deg,#7fffd4,#ffe4e1,#f0e68c)}
-.work-block[data-block-index="3"]{background:linear-gradient(270deg,#dda0dd,#afeeee,#98fb98)}
-@keyframes soap-bubble{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-.text-copier-container{position:relative;width:90%;max-width:700px;padding:20px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(31,38,135,0.15);display:flex;flex-direction:column;align-items:center;border-radius:20px}
-.text-copier-container textarea{width:100%;height:300px;padding:15px;border:none;outline:none;border-radius:10px;background:rgba(255,255,255,0.8);box-shadow:0 2px 10px rgba(0,0,0,0.1);font-size:16px;color:rgba(0,0,0,0.8);resize:none}
-.text-copier-container textarea::placeholder{color:rgba(0,0,0,0.5)}
-.text-copier-container button{margin-top:10px;padding:10px 20px;font-size:16px;color:white;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.2);cursor:pointer;transition:background 0.3s ease}
-.text-copier-container button:hover{background:linear-gradient(135deg,#764ba2,#667eea)}
-.text-copier-container button:active{transform:scale(0.98)}
-#status{margin-top:10px;font-size:14px;color:rgba(0,0,0,0.8)}
-.settings-button{position:absolute;bottom:20px;right:20px;width:50px;height:50px;background:white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.2);display:flex;justify-content:center;align-items:center;cursor:pointer;transition:transform 0.3s ease}
-.settings-button:hover{transform:rotate(30deg)}
-.settings-button::before{content:"\2699";font-size:24px;color:black}
-.settings-menu{position:absolute;bottom:80px;right:20px;background:rgba(255,255,255,0.9);box-shadow:0 2px 6px rgba(0,0,0,0.2);border-radius:10px;padding:10px;display:none;flex-direction:column;gap:10px}
-.settings-menu.active{display:flex}
-.settings-menu button{width:100%;font-size:14px}
-/* Blinking red text for Panduro mode */
-#panduroFocusWarning{position:absolute;top:-40px;color:#ff0000;font-weight:bold;font-size:18px;animation:blink 1s infinite;display:none}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-</style></head><body>
-<div class="view-container active-view" id="calendar-view">
-  <div class="calendar-container">
-    <div id="header-calendar">
-      <div id="date-container-calendar">
-        <div id="date-calendar"></div>
-        <div id="month-name-calendar"></div>
-      </div>
-      <div id="day-name-calendar"></div>
-      <button class="fullscreen-button" id="fullscreen-btn-calendar" aria-label="Toggle Fullscreen"></button>
-    </div>
-    <div id="to-do-list-container">
-      <div id="editor-calendar" contenteditable="true">
-        <div id="daily-frog" class="clickable need-to-do" contenteditable="true">🐸 Dagens Tudse</div>
-      </div>
-      <div id="work-blocks-container">
-        <div class="work-block" data-block-index="1">
-          <div class="block-title" contenteditable="true">Work Block 1</div>
-          <div class="block-tasks" contenteditable="true"></div>
-        </div>
-        <div class="work-block" data-block-index="2">
-          <div class="block-title" contenteditable="true">Work Block 2</div>
-          <div class="block-tasks" contenteditable="true"></div>
-        </div>
-        <div class="work-block" data-block-index="3">
-          <div class="block-title" contenteditable="true">Work Block 3</div>
-          <div class="block-tasks" contenteditable="true"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="avatar-box" onclick="openChat()">
-    <div class="avatar"><img src="Avatar.jpeg" alt="Avatar"></div>
-    <div class="text-bubble" id="greeting-message-calendar"></div>
-  </div>
-</div>
-<div class="view-container" id="timer-view">
-  <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
-    <div id="panduroFocusWarning">Work in progress, stay focused.</div>
-    <div class="timer-container">
-      <svg class="progress-ring" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45"/>
-        <circle class="progress" cx="50" cy="50" r="45"/>
-      </svg>
-      <canvas class="connecting-circle" width="300" height="300"></canvas>
-      <div class="mode-indicators">
-        <div class="mode-indicator" style="top:15%;left:50%;"></div>
-        <div class="mode-indicator" style="top:50%;right:15%;"></div>
-        <div class="mode-indicator" style="bottom:15%;left:50%;"></div>
-        <div class="mode-indicator" style="top:50%;left:15%;"></div>
-      </div>
-      <div class="knob"></div>
-      <div class="display">--:--</div>
-      <div class="mode-name"></div>
-    </div>
-    <!-- Extra buttons row -->
-    <div style="margin-top:20px;display:flex;gap:15px;align-items:center;justify-content:center;">
-      <button id="audioToggleButton" style="font-size:20px;padding:10px;cursor:pointer;border:none;border-radius:8px;background:rgba(255,255,255,0.6);">
-        &#9654;<!-- play symbol -->
-      </button>
-      <button onclick="window.open('https://www.deepbreathe.app','_blank')" style="font-size:20px;padding:10px;cursor:pointer;border:none;border-radius:8px;background:rgba(255,255,255,0.6);">
-        &#128168;<!-- breath icon -->
-      </button>
-    </div>
-    <!-- Panduro sessions counter -->
-    <div id="panduroCounter" style="position:absolute;top:10px;right:10px;color:#fff;font-weight:bold;">0/7</div>
-  </div>
-</div>
-<div class="view-container" id="text-copier-view">
-  <div class="text-copier-container">
-    <button id="loginButton">Log ind med Google</button>
-    <textarea id="textInput" placeholder="Skriv noget her..."></textarea>
-    <button onclick="copyText()">Kopier</button>
-    <p id="status"></p>
-    <div class="settings-button" id="settingsButton"></div>
-    <div class="settings-menu" id="settingsMenu">
-      <button id="toggleLoginButton">Skjul Log ind</button>
-      <button id="fullscreenButton">Fuldskærm</button>
-    </div>
-  </div>
-</div>
-<div class="nav-button-container">
-  <div class="nav-button active" id="btn-calendar" aria-label="Calendar View"></div>
-  <div class="nav-button" id="btn-timer" aria-label="Timer View"></div>
-  <div class="nav-button" id="btn-text-copier" aria-label="Text Copier View"></div>
-</div>
-<script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
-<script>
-const firebaseConfig={apiKey:"AIzaSyAoY_XxClJRTUS6OJmaIDvZm014Lx7sXA4",authDomain:"copypaste2000-5776c.firebaseapp.com",databaseURL:"https://copypaste2000-5776c-default-rtdb.firebaseio.com",projectId:"copypaste2000-5776c",storageBucket:"copypaste2000-5776c.appspot.com",messagingSenderId:"733249598043",appId:"1:733249598043:web:6648bfe9b408127aa6457e",measurementId:"G-M16KES53R6"};
-firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth(),database=firebase.database();let userId=null;
-function signInWithGoogle(){
-  const p=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(p).then(r=>{
-    userId=r.user.uid;loadDataFromFirebase();
-  }).catch(e=>{alert("Login failed: "+e.message)})
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  auth.onAuthStateChanged(u=>{
-    if(u){userId=u.uid;loadDataFromFirebase();}
-    else{signInWithGoogle();}
-  });
-});
-function loadDataFromFirebase(){
-  if(!userId)return;
-  const d=canvasKeysCalendar[currentCanvasIndexCalendar],
-        toDoRef=database.ref(`users/${userId}/toDoList/${d}`),
-        workBlocksRef=database.ref(`users/${userId}/workBlocks/${d}`),
-        frogRef=database.ref(`users/${userId}/frog/${d}`);
-  toDoRef.once('value',s=>{
-    editorCalendar.innerHTML=s.val()?s.val():editorCalendar.innerHTML
-  });
-  frogRef.once('value',s=>{
-    if(!s.val())document.getElementById('daily-frog').innerHTML="🐸 Dagens Tudse";
-  });
-  workBlocksRef.once('value',s=>{
-    const data=s.val();
-    if(data){
-      workBlockElements.block1.innerHTML=data.block1||'';
-      workBlockElements.block2.innerHTML=data.block2||'';
-      workBlockElements.block3.innerHTML=data.block3||'';
-      workBlockElements.title1.innerText=data.title1||'Work Block 1';
-      workBlockElements.title2.innerText=data.title2||'Work Block 2';
-      workBlockElements.title3.innerText=data.title3||'Work Block 3';
-    } else {
-      workBlockElements.block1.innerHTML='';
-      workBlockElements.block2.innerHTML='';
-      workBlockElements.block3.innerHTML='';
-      workBlockElements.title1.innerText='Work Block 1';
-      workBlockElements.title2.innerText='Work Block 2';
-      workBlockElements.title3.innerText='Work Block 3';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calendar, To-Do List, Timer, and Live Text Copier with Firebase Integration</title>
+  <style>
+    body,html {
+      margin:0;
+      padding:0;
+      height:100%;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;
+      background:linear-gradient(135deg,#f5f7fa 0%,#e4e7eb 100%);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column
     }
-    Object.values(workBlockElements.blocks).forEach(b=>checkWorkBlockCompletion(b.parentNode));
-  });
-}
-function saveCurrentCanvasCalendar(){
-  if(!userId)return;
-  const d=canvasKeysCalendar[currentCanvasIndexCalendar];
-  database.ref(`users/${userId}/toDoList/${d}`).set(editorCalendar.innerHTML);
-  database.ref(`users/${userId}/workBlocks/${d}`).set({
-    block1:workBlockElements.block1.innerHTML,
-    block2:workBlockElements.block2.innerHTML,
-    block3:workBlockElements.block3.innerHTML,
-    title1:workBlockElements.title1.innerText,
-    title2:workBlockElements.title2.innerText,
-    title3:workBlockElements.title3.innerText
-  });
-  database.ref(`users/${userId}/frog/${d}`).set(document.getElementById('daily-frog').innerHTML);
-}
-setInterval(saveCurrentCanvasCalendar,60000);
-window.addEventListener('beforeunload',saveCurrentCanvasCalendar);
-
-/* Calendar Elements + Fullscreen */
-const editorCalendar=document.getElementById('editor-calendar'),
-      dayNameElementCalendar=document.getElementById('day-name-calendar'),
-      dateElementCalendar=document.getElementById('date-calendar'),
-      monthNameElementCalendar=document.getElementById('month-name-calendar'),
-      greetingMessageElementCalendar=document.getElementById('greeting-message-calendar'),
-      fullscreenBtnCalendar=document.getElementById('fullscreen-btn-calendar'),
-      headerCalendar=document.getElementById('header-calendar');
-let longPressTimerCalendar;const longPressDurationCalendar=500;
-function enterFullscreenCalendar(){
-  const e=document.documentElement;
-  if(e.requestFullscreen)e.requestFullscreen();
-  else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();
-  else if(e.msRequestFullscreen)e.msRequestFullscreen();
-}
-function exitFullscreenCalendar(){
-  if(document.exitFullscreen)document.exitFullscreen();
-  else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
-  else if(document.msExitFullscreen)document.msExitFullscreen();
-}
-function toggleFullscreenCalendar(){
-  if(!document.fullscreenElement&&!document.webkitFullscreenElement&&!document.msFullscreenElement)enterFullscreenCalendar();else exitFullscreenCalendar();
-}
-function showFullscreenButtonCalendar(){fullscreenBtnCalendar.classList.add('visible')}
-function hideFullscreenButtonCalendar(){fullscreenBtnCalendar.classList.remove('visible')}
-headerCalendar.addEventListener('touchstart',e=>{
-  longPressTimerCalendar=setTimeout(()=>{showFullscreenButtonCalendar()},longPressDurationCalendar);
-});
-headerCalendar.addEventListener('touchend',e=>{clearTimeout(longPressTimerCalendar)});
-headerCalendar.addEventListener('touchmove',e=>{clearTimeout(longPressTimerCalendar)});
-document.addEventListener('touchstart',e=>{
-  if(!fullscreenBtnCalendar.contains(e.target)&&!headerCalendar.contains(e.target))hideFullscreenButtonCalendar();
-});
-fullscreenBtnCalendar.addEventListener('click',()=>{
-  toggleFullscreenCalendar();hideFullscreenButtonCalendar();
-});
-
-/* Generate full year 2025 */
-const danishDaysCalendar=['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'],
-      danishMonthsCalendar=['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December'];
-const startDateCalendar=1,startMonthCalendar=0,endMonthCalendar=11,yearCalendar=2025;
-const canvasKeysCalendar=[];let totalDaysCalendar=0;
-for(let m=startMonthCalendar;m<=endMonthCalendar;m++){
-  const dm=new Date(yearCalendar,m+1,0).getDate(),
-        sd=(m===startMonthCalendar?startDateCalendar:1);
-  for(let d=sd;d<=dm;d++){
-    canvasKeysCalendar.push(`canvas${yearCalendar}${(m+1).toString().padStart(2,'0')}${d.toString().padStart(2,'0')}`);
-    totalDaysCalendar++;
-  }
-}
-let currentCanvasIndexCalendar=0;
-const hoverSoundCalendar=new Audio('Hover.wav'),clickSoundCalendar=new Audio('click.mp3');
-function updateEditorCalendar(){
-  let cDay=startDateCalendar,cMonth=startMonthCalendar;
-  for(let i=0;i<currentCanvasIndexCalendar;i++){
-    cDay++;if(cDay>new Date(yearCalendar,cMonth+1,0).getDate()){cDay=1;cMonth++}
-  }
-  const date=new Date(yearCalendar,cMonth,cDay);
-  dayNameElementCalendar.innerText=danishDaysCalendar[date.getDay()];
-  dateElementCalendar.innerText=cDay;
-  monthNameElementCalendar.innerText=danishMonthsCalendar[cMonth];
-  loadDataFromFirebase();
-}
-function setCurrentCanvasIndexCalendar(){
-  const t=new Date();
-  // open today's date if it's in 2025, else default to first
-  if(t>=new Date(yearCalendar,startMonthCalendar,startDateCalendar)&&t<=new Date(yearCalendar,endMonthCalendar+1,0)){
-    const diff=Math.floor((t-(new Date(yearCalendar,startMonthCalendar,startDateCalendar)))/(1000*60*60*24));
-    currentCanvasIndexCalendar=Math.min(diff,totalDaysCalendar-1);
-  } else currentCanvasIndexCalendar=0;
-}
-function showPreviousCanvasCalendar(){
-  saveCurrentCanvasCalendar();
-  currentCanvasIndexCalendar=(currentCanvasIndexCalendar===0?canvasKeysCalendar.length-1:currentCanvasIndexCalendar-1);
-  hoverSoundCalendar.play();updateEditorCalendar();
-}
-function showNextCanvasCalendar(){
-  saveCurrentCanvasCalendar();
-  currentCanvasIndexCalendar=(currentCanvasIndexCalendar===canvasKeysCalendar.length-1?0:currentCanvasIndexCalendar+1);
-  hoverSoundCalendar.play();updateEditorCalendar();
-}
-let messageTimeoutCalendar;function openChat(){window.open('https://huggingface.co/chat/','_blank')}
-function selectGreetingCalendar(){
-  const h=(new Date()).getHours();let msg="";
-  if(h>=5&&h<12)msg=getRandomMessageCalendar(greetingsCalendar.morning);
-  else if(h>=12&&h<18)msg=getRandomMessageCalendar(greetingsCalendar.afternoon);
-  else msg=getRandomMessageCalendar(greetingsCalendar.evening);
-  greetingMessageElementCalendar.innerText=msg;greetingMessageElementCalendar.classList.remove('hidden');
-}
-function getRandomMessageCalendar(a){if(a.length===0)return"";return a[Math.floor(Math.random()*a.length)]}
-function displayCongratulatoryMessageCalendar(){
-  if(congratulatoryMessagesCalendar.length===0)return;
-  const m=congratulatoryMessagesCalendar[Math.floor(Math.random()*congratulatoryMessagesCalendar.length)],
-        full=`${m.icon} ${m.text}`;
-  if(messageTimeoutCalendar){clearTimeout(messageTimeoutCalendar);messageTimeoutCalendar=null}
-  greetingMessageElementCalendar.innerText=full;
-  greetingMessageElementCalendar.classList.remove('hidden');
-  messageTimeoutCalendar=setTimeout(()=>{
-    greetingMessageElementCalendar.classList.add('hidden');
-    setTimeout(()=>{selectGreetingCalendar()},500);
-  },20000);
-}
-/* Prettier confetti on second click */
-function showConfetti(){
-  const c=document.createElement('canvas');
-  c.style.position='fixed';c.style.top=0;c.style.left=0;c.style.width='100%';c.style.height='100%';c.style.pointerEvents='none';
-  document.body.appendChild(c);
-  const ctx=c.getContext('2d'),w=window.innerWidth,h=window.innerHeight;
-  c.width=w;c.height=h;
-  const confettiCount=80;let particles=[];
-  for(let i=0;i<confettiCount;i++){
-    particles.push({
-      x:Math.random()*w,
-      y:Math.random()*-h,
-      r:Math.random()*6+4,
-      vx:(Math.random()-0.5)*4,
-      vy:Math.random()*3+2,
-      color:'hsl('+Math.random()*360+',100%,50%)',
-      opacity:1,
-      tiltAngle:Math.random()*Math.PI
+    .view-container {
+      flex:1;
+      display:none;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      gap:20px;
+      position:relative;
+      width:100%;
+      height:100%
+    }
+    .active-view { display:flex }
+    .calendar-container {
+      position:relative;
+      width:80%;
+      max-width:600px;
+      padding:20px;
+      background:rgba(255,255,255,0.6);
+      backdrop-filter:blur(10px);
+      box-shadow:0 8px 32px rgba(31,38,135,0.15);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      border-radius:20px;
+      color:rgba(0,0,0,0.8);
+      height:70%
+    }
+    #header-calendar {
+      width:100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      padding:10px;
+      box-sizing:border-box;
+      position:relative;
+      flex-shrink:0
+    }
+    #date-container-calendar { text-align:left }
+    #date-calendar, #day-name-calendar, #month-name-calendar {
+      font-size:24px;
+      margin:0;
+      line-height:1.2;
+      text-shadow:0 2px 10px rgba(0,0,0,0.1);
+      cursor:pointer
+    }
+    #to-do-list-container {
+      width:100%;
+      overflow-y:auto;
+      flex:1;
+      padding:10px;
+      box-sizing:border-box
+    }
+    #editor-calendar {
+      width:100%;
+      border:none;
+      outline:none;
+      white-space:pre-wrap;
+      word-wrap:break-word;
+      margin-top:10px;
+      font-size:26px;
+      background:transparent;
+      color:inherit;
+      text-shadow:0 2px 10px rgba(0,0,0,0.05)
+    }
+    .clickable { cursor:pointer; transition:text-decoration 0.3s ease, color 0.3s ease }
+    .clickable:hover { text-decoration:underline }
+    .completed {
+      text-decoration:line-through;
+      color:gray;
+      transition:text-decoration 0.3s ease, color 0.3s ease;
+      animation:none;
+      text-shadow:none
+    }
+    .need-to-do { animation:glow 1s ease-in-out infinite alternate }
+    @keyframes glow {
+      from { text-shadow:0 0 5px rgba(255,0,0,0.5) }
+      to { text-shadow:0 0 20px rgba(255,0,0,1) }
+    }
+    .avatar-box {
+      position:relative;
+      width:80%;
+      max-width:600px;
+      padding:20px;
+      background:rgba(255,255,255,0.6);
+      backdrop-filter:blur(10px);
+      box-shadow:0 8px 32px rgba(31,38,135,0.15);
+      display:flex;
+      align-items:center;
+      border-radius:20px;
+      gap:15px;
+      cursor:pointer;
+      flex-shrink:0
+    }
+    .avatar {
+      width:60px;
+      height:60px;
+      border-radius:50%;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+      overflow:hidden
+    }
+    .avatar img { width:100%; height:100%; object-fit:cover }
+    .text-bubble {
+      position:relative;
+      background:rgba(255,255,255,0.8);
+      padding:10px 15px;
+      border-radius:15px;
+      color:rgba(0,0,0,0.8);
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+      text-shadow:0 1px 5px rgba(0,0,0,0.05);
+      flex-grow:1;
+      transition:opacity 0.5s ease;
+      opacity:1
+    }
+    .text-bubble.hidden { opacity:0 }
+    .fullscreen-button {
+      position:absolute;
+      top:10px;
+      right:10px;
+      background:white;
+      border:none;
+      border-radius:50%;
+      width:40px;
+      height:40px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      cursor:pointer;
+      opacity:0;
+      transition:opacity 0.3s ease;
+      z-index:10
+    }
+    .fullscreen-button.visible { opacity:1 }
+    .fullscreen-button::before {
+      content:"\26F6";
+      font-size:20px;
+      color:black
+    }
+    .timer-container {
+      position:relative;
+      width:300px;
+      height:300px;
+      border-radius:50%;
+      background:rgba(255,255,255,0.1);
+      backdrop-filter:blur(10px);
+      box-shadow:0 8px 32px rgba(31,38,135,0.15);
+      display:flex;
+      justify-content:center;
+      align-items:center
+    }
+    .progress-ring {
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%
+    }
+    .progress-ring circle {
+      fill:none;
+      stroke:rgba(255,255,255,0.3);
+      stroke-width:8
+    }
+    .progress-ring .progress {
+      stroke:rgba(255,255,255,0.8);
+      stroke-linecap:round;
+      transition:stroke-dashoffset 0.5s ease
+    }
+    .connecting-circle {
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%
+    }
+    .knob {
+      width:60px;
+      height:60px;
+      background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.4));
+      border-radius:50%;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+      cursor:pointer;
+      position:absolute;
+      top:calc(50% - 30px);
+      left:calc(50% - 30px);
+      transition:box-shadow 0.3s ease;
+      z-index:10
+    }
+    .knob:hover { box-shadow:0 0 20px rgba(255,255,255,0.5) }
+    .knob:active { box-shadow:0 0 30px rgba(255,255,255,0.7) }
+    .display {
+      font-size:48px;
+      color:rgba(255,255,255,0.9);
+      text-shadow:0 2px 10px rgba(0,0,0,0.1);
+      position:relative;
+      z-index:5
+    }
+    .mode-indicators {
+      position:absolute;
+      width:100%;
+      height:100%;
+      z-index:10
+    }
+    .mode-indicator {
+      position:absolute;
+      width:10px;
+      height:10px;
+      background:rgba(255,255,255,0.5);
+      border-radius:50%;
+      transition:background 0.3s ease
+    }
+    .mode-indicator.active {
+      background:rgba(255,255,255,0.9);
+      box-shadow:0 0 10px rgba(255,255,255,0.5)
+    }
+    .mode-name {
+      font-size:24px;
+      color:rgba(255,255,255,0.9);
+      text-shadow:0 2px 10px rgba(0,0,0,0.1);
+      opacity:0;
+      transition:opacity 0.3s ease;
+      position:relative;
+      z-index:5
+    }
+    .nav-button-container {
+      position:fixed;
+      bottom:20px;
+      left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      gap:10px;
+      z-index:100
+    }
+    .nav-button {
+      width:15px;
+      height:15px;
+      background:rgba(255,255,255,0.6);
+      border-radius:50%;
+      cursor:pointer;
+      transition:background 0.3s ease
+    }
+    .nav-button.active {
+      background:rgba(255,255,255,1);
+      box-shadow:0 0 5px rgba(0,0,0,0.2)
+    }
+    @media (max-width:480px){
+      .calendar-container,.avatar-box { width:90%; padding:15px }
+      #date-calendar,#day-name-calendar,#month-name-calendar { font-size:20px }
+      #editor-calendar { font-size:22px }
+      .text-bubble { font-size:16px }
+      .fullscreen-button { width:35px; height:35px; top:8px; right:8px }
+      .fullscreen-button::before { font-size:18px }
+      .timer-container { width:250px; height:250px }
+      .display { font-size:36px }
+      .mode-name { font-size:20px }
+      .knob { width:50px; height:50px; top:calc(50% - 25px); left:calc(50% - 25px) }
+      .nav-button { width:12px; height:12px }
+    }
+    #work-blocks-container { width:100%; margin-top:20px }
+    .work-block {
+      position:relative;
+      padding:20px;
+      margin-bottom:20px;
+      border-radius:15px;
+      overflow:hidden;
+      transition:background 0.5s ease;
+      background-size:600% 600%;
+      animation:soap-bubble 10s ease infinite
+    }
+    .block-title {
+      font-size:24px;
+      font-weight:bold;
+      margin-bottom:10px;
+      cursor:text
+    }
+    .block-tasks { font-size:20px; min-height:50px }
+    .work-block.completed .block-title { text-decoration:line-through; color:gray }
+    .work-block.completed { background:rgba(200,200,200,0.5); animation:none }
+    .work-block[data-block-index="1"] { background:linear-gradient(270deg, #ff7f50, #87cefa, #da70d6) }
+    .work-block[data-block-index="2"] { background:linear-gradient(270deg, #7fffd4, #ffe4e1, #f0e68c) }
+    .work-block[data-block-index="3"] { background:linear-gradient(270deg, #dda0dd, #afeeee, #98fb98) }
+    @keyframes soap-bubble {
+      0% { background-position:0% 50% }
+      50% { background-position:100% 50% }
+      100% { background-position:0% 50% }
+    }
+    .text-copier-container {
+      position:relative;
+      width:90%;
+      max-width:700px;
+      padding:20px;
+      background:rgba(255,255,255,0.6);
+      backdrop-filter:blur(10px);
+      box-shadow:0 8px 32px rgba(31,38,135,0.15);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      border-radius:20px
+    }
+    .text-copier-container textarea {
+      width:100%;
+      height:300px;
+      padding:15px;
+      border:none;
+      outline:none;
+      border-radius:10px;
+      background:rgba(255,255,255,0.8);
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+      font-size:16px;
+      color:rgba(0,0,0,0.8);
+      resize:none
+    }
+    .text-copier-container textarea::placeholder { color:rgba(0,0,0,0.5) }
+    .text-copier-container button {
+      margin-top:10px;
+      padding:10px 20px;
+      font-size:16px;
+      color:white;
+      background:linear-gradient(135deg, #667eea, #764ba2);
+      border:none;
+      border-radius:10px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.2);
+      cursor:pointer;
+      transition:background 0.3s ease
+    }
+    .text-copier-container button:hover { background:linear-gradient(135deg, #764ba2, #667eea) }
+    .text-copier-container button:active { transform:scale(0.98) }
+    #status { margin-top:10px; font-size:14px; color:rgba(0,0,0,0.8) }
+    .settings-button {
+      position:absolute;
+      bottom:20px;
+      right:20px;
+      width:50px;
+      height:50px;
+      background:white;
+      border-radius:50%;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      cursor:pointer;
+      transition:transform 0.3s ease
+    }
+    .settings-button:hover { transform:rotate(30deg) }
+    .settings-button::before {
+      content:"\2699";
+      font-size:24px;
+      color:black
+    }
+    .settings-menu {
+      position:absolute;
+      bottom:80px;
+      right:20px;
+      background:rgba(255,255,255,0.9);
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      border-radius:10px;
+      padding:10px;
+      display:none;
+      flex-direction:column;
+      gap:10px
+    }
+    .settings-menu.active { display:flex }
+    .settings-menu button { width:100%; font-size:14px }
+    /* Blinking red text for Panduro mode (bruges nu også til Deep Work) */
+    #panduroFocusWarning {
+      position:absolute;
+      top:-40px;
+      color:#ff0000;
+      font-weight:bold;
+      font-size:18px;
+      animation:blink 1s infinite;
+      display:none
+    }
+    @keyframes blink {
+      0%,100% { opacity:1 }
+      50% { opacity:0 }
+    }
+  </style>
+</head>
+<body>
+  <div class="view-container active-view" id="calendar-view">
+    <div class="calendar-container">
+      <div id="header-calendar">
+        <div id="date-container-calendar">
+          <div id="date-calendar"></div>
+          <div id="month-name-calendar"></div>
+        </div>
+        <div id="day-name-calendar"></div>
+        <button class="fullscreen-button" id="fullscreen-btn-calendar" aria-label="Toggle Fullscreen"></button>
+      </div>
+      <div id="to-do-list-container">
+        <div id="editor-calendar" contenteditable="true">
+          <div id="daily-frog" class="clickable need-to-do" contenteditable="true">🐸 Dagens Tudse</div>
+        </div>
+        <div id="work-blocks-container">
+          <div class="work-block" data-block-index="1">
+            <div class="block-title" contenteditable="true">Work Block 1</div>
+            <div class="block-tasks" contenteditable="true"></div>
+          </div>
+          <div class="work-block" data-block-index="2">
+            <div class="block-title" contenteditable="true">Work Block 2</div>
+            <div class="block-tasks" contenteditable="true"></div>
+          </div>
+          <div class="work-block" data-block-index="3">
+            <div class="block-title" contenteditable="true">Work Block 3</div>
+            <div class="block-tasks" contenteditable="true"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="avatar-box" onclick="openChat()">
+      <div class="avatar"><img src="Avatar.jpeg" alt="Avatar"></div>
+      <div class="text-bubble" id="greeting-message-calendar"></div>
+    </div>
+  </div>
+  <div class="view-container" id="timer-view">
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+      <div id="panduroFocusWarning">Work in progress, stay focused.</div>
+      <div class="timer-container">
+        <svg class="progress-ring" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45"/>
+          <circle class="progress" cx="50" cy="50" r="45"/>
+        </svg>
+        <canvas class="connecting-circle" width="300" height="300"></canvas>
+        <div class="mode-indicators">
+          <div class="mode-indicator" style="top:15%;left:50%;"></div>
+          <div class="mode-indicator" style="top:50%;right:15%;"></div>
+          <div class="mode-indicator" style="bottom:15%;left:50%;"></div>
+          <div class="mode-indicator" style="top:50%;left:15%;"></div>
+        </div>
+        <div class="knob"></div>
+        <div class="display">--:--</div>
+        <div class="mode-name"></div>
+      </div>
+      <!-- Extra buttons row -->
+      <div style="margin-top:20px;display:flex;gap:15px;align-items:center;justify-content:center;">
+        <button id="audioToggleButton" style="font-size:20px;padding:10px;cursor:pointer;border:none;border-radius:8px;background:rgba(255,255,255,0.6);">
+          &#9654;
+        </button>
+        <button onclick="window.open('https://www.deepbreathe.app','_blank')" style="font-size:20px;padding:10px;cursor:pointer;border:none;border-radius:8px;background:rgba(255,255,255,0.6);">
+          &#128168;
+        </button>
+      </div>
+      <!-- Session counter (0/7) -->
+      <div id="panduroCounter" style="position:absolute;top:10px;right:10px;color:#fff;font-weight:bold;">0/7</div>
+    </div>
+  </div>
+  <div class="view-container" id="text-copier-view">
+    <div class="text-copier-container">
+      <button id="loginButton">Log ind med Google</button>
+      <textarea id="textInput" placeholder="Skriv noget her..."></textarea>
+      <button onclick="copyText()">Kopier</button>
+      <p id="status"></p>
+      <div class="settings-button" id="settingsButton"></div>
+      <div class="settings-menu" id="settingsMenu">
+        <button id="toggleLoginButton">Skjul Log ind</button>
+        <button id="fullscreenButton">Fuldskærm</button>
+      </div>
+    </div>
+  </div>
+  <div class="nav-button-container">
+    <div class="nav-button active" id="btn-calendar" aria-label="Calendar View"></div>
+    <div class="nav-button" id="btn-timer" aria-label="Timer View"></div>
+    <div class="nav-button" id="btn-text-copier" aria-label="Text Copier View"></div>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.19.1/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:"AIzaSyAoY_XxClJRTUS6OJmaIDvZm014Lx7sXA4",
+      authDomain:"copypaste2000-5776c.firebaseapp.com",
+      databaseURL:"https://copypaste2000-5776c-default-rtdb.firebaseio.com",
+      projectId:"copypaste2000-5776c",
+      storageBucket:"copypaste2000-5776c.appspot.com",
+      messagingSenderId:"733249598043",
+      appId:"1:733249598043:web:6648bfe9b408127aa6457e",
+      measurementId:"G-M16KES53R6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(), database = firebase.database();
+    let userId = null;
+    function signInWithGoogle(){
+      const p = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(p).then(r=>{
+        userId = r.user.uid;
+        loadDataFromFirebase();
+      }).catch(e=>{ alert("Login failed: " + e.message) })
+    }
+    document.addEventListener('DOMContentLoaded',()=>{
+      auth.onAuthStateChanged(u=>{
+        if(u){ userId = u.uid; loadDataFromFirebase(); }
+        else { signInWithGoogle(); }
+      });
     });
-  }
-  function draw(){
-    ctx.clearRect(0,0,w,h);
-    particles.forEach(p=>{
-      ctx.save();ctx.beginPath();
-      ctx.translate(p.x,p.y);ctx.rotate(p.tiltAngle);
-      ctx.globalAlpha=p.opacity;
-      ctx.arc(0,0,p.r,0,2*Math.PI);
-      ctx.fillStyle=p.color;ctx.fill();
-      ctx.restore();
-    });
-    update();
-  }
-  function update(){
-    particles.forEach(p=>{
-      p.x+=p.vx;p.y+=p.vy;p.opacity-=0.01;
-      p.tiltAngle+=0.05*(Math.random()*0.1+0.05);
-      if(p.opacity<=0){
-        p.x=Math.random()*w;p.y=Math.random()*-50;
-        p.opacity=1;
-      }
-    });
-  }
-  let animationId;function loop(){draw();animationId=requestAnimationFrame(loop);}
-  loop();
-  setTimeout(()=>{
-    cancelAnimationFrame(animationId);
-    document.body.removeChild(c);
-  },3000);
-}
-
-/* Handle tasks in editor */
-function handleSpecialCharacterConversion(e,char){
-  const s=window.getSelection();if(!s.rangeCount)return;
-  const r=s.getRangeAt(0),n=r.startContainer;if(n.nodeType!==Node.TEXT_NODE)return;
-  const t=n.textContent,i=t.lastIndexOf(char);
-  if(i===t.length-1){
-    const b=t.slice(0,i).trim();if(b.length===0)return;
-    const span=document.createElement('span');span.classList.add('clickable');
-    if(char==='!')span.classList.add('need-to-do');
-    span.textContent=b;n.parentNode.replaceChild(span,n);
-    const br=document.createElement('br');
-    span.parentNode.insertBefore(br,span.nextSibling);
-    const newRange=document.createRange();
-    newRange.setStartAfter(br);newRange.collapse(true);s.removeAllRanges();s.addRange(newRange);
-    saveCurrentCanvasCalendar();
-  }
-}
-function handleKeyUp(e){
-  if(e.key==='.'||e.key==='!')handleSpecialCharacterConversion(e.currentTarget,e.key);
-}
-function handleClick(e){
-  if(e.target.classList.contains('clickable')){
-    if(e.target.classList.contains('completed')){
-      e.target.classList.remove('completed');
-      if(e.target.classList.contains('need-to-do'))e.target.style.animation='';
-    } else {
-      e.target.classList.add('completed');
-      clickSoundCalendar.play();
-      e.target.style.animation='none';
-      // Only show confetti on second time Dagens Tudse is marked completed
-      if(e.target.id==='daily-frog'){
-        if(!e.target.dataset.added){ 
-          e.target.dataset.added="true"; 
+    function loadDataFromFirebase(){
+      if(!userId)return;
+      const d = canvasKeysCalendar[currentCanvasIndexCalendar],
+            toDoRef = database.ref(`users/${userId}/toDoList/${d}`),
+            workBlocksRef = database.ref(`users/${userId}/workBlocks/${d}`),
+            frogRef = database.ref(`users/${userId}/frog/${d}`);
+      toDoRef.once('value', s=>{
+        editorCalendar.innerHTML = s.val() ? s.val() : editorCalendar.innerHTML;
+      });
+      frogRef.once('value', s=>{
+        if(!s.val())
+          document.getElementById('daily-frog').innerHTML = "🐸 Dagens Tudse";
+      });
+      workBlocksRef.once('value', s=>{
+        const data = s.val();
+        if(data){
+          workBlockElements.block1.innerHTML = data.block1 || '';
+          workBlockElements.block2.innerHTML = data.block2 || '';
+          workBlockElements.block3.innerHTML = data.block3 || '';
+          workBlockElements.title1.innerText = data.title1 || 'Work Block 1';
+          workBlockElements.title2.innerText = data.title2 || 'Work Block 2';
+          workBlockElements.title3.innerText = data.title3 || 'Work Block 3';
         } else {
-          showConfetti();
+          workBlockElements.block1.innerHTML = '';
+          workBlockElements.block2.innerHTML = '';
+          workBlockElements.block3.innerHTML = '';
+          workBlockElements.title1.innerText = 'Work Block 1';
+          workBlockElements.title2.innerText = 'Work Block 2';
+          workBlockElements.title3.innerText = 'Work Block 3';
+        }
+        Object.values(workBlockElements.blocks).forEach(b=>checkWorkBlockCompletion(b.parentNode));
+      });
+    }
+    function saveCurrentCanvasCalendar(){
+      if(!userId)return;
+      const d = canvasKeysCalendar[currentCanvasIndexCalendar];
+      database.ref(`users/${userId}/toDoList/${d}`).set(editorCalendar.innerHTML);
+      database.ref(`users/${userId}/workBlocks/${d}`).set({
+        block1: workBlockElements.block1.innerHTML,
+        block2: workBlockElements.block2.innerHTML,
+        block3: workBlockElements.block3.innerHTML,
+        title1: workBlockElements.title1.innerText,
+        title2: workBlockElements.title2.innerText,
+        title3: workBlockElements.title3.innerText
+      });
+      database.ref(`users/${userId}/frog/${d}`).set(document.getElementById('daily-frog').innerHTML);
+    }
+    setInterval(saveCurrentCanvasCalendar,60000);
+    window.addEventListener('beforeunload', saveCurrentCanvasCalendar);
+
+    /* Calendar Elements + Fullscreen */
+    const editorCalendar = document.getElementById('editor-calendar'),
+          dayNameElementCalendar = document.getElementById('day-name-calendar'),
+          dateElementCalendar = document.getElementById('date-calendar'),
+          monthNameElementCalendar = document.getElementById('month-name-calendar'),
+          greetingMessageElementCalendar = document.getElementById('greeting-message-calendar'),
+          fullscreenBtnCalendar = document.getElementById('fullscreen-btn-calendar'),
+          headerCalendar = document.getElementById('header-calendar');
+    let longPressTimerCalendar; const longPressDurationCalendar = 500;
+    function enterFullscreenCalendar(){
+      const e = document.documentElement;
+      if(e.requestFullscreen)e.requestFullscreen();
+      else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();
+      else if(e.msRequestFullscreen)e.msRequestFullscreen();
+    }
+    function exitFullscreenCalendar(){
+      if(document.exitFullscreen)document.exitFullscreen();
+      else if(document.webkitExitFullscreen)document.webkitExitFullscreen();
+      else if(document.msExitFullscreen)document.msExitFullscreen();
+    }
+    function toggleFullscreenCalendar(){
+      if(!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement)
+        enterFullscreenCalendar();
+      else exitFullscreenCalendar();
+    }
+    function showFullscreenButtonCalendar(){ fullscreenBtnCalendar.classList.add('visible') }
+    function hideFullscreenButtonCalendar(){ fullscreenBtnCalendar.classList.remove('visible') }
+    headerCalendar.addEventListener('touchstart', e=>{
+      longPressTimerCalendar = setTimeout(()=>{ showFullscreenButtonCalendar() }, longPressDurationCalendar);
+    });
+    headerCalendar.addEventListener('touchend', e=>{ clearTimeout(longPressTimerCalendar) });
+    headerCalendar.addEventListener('touchmove', e=>{ clearTimeout(longPressTimerCalendar) });
+    document.addEventListener('touchstart', e=>{
+      if(!fullscreenBtnCalendar.contains(e.target) && !headerCalendar.contains(e.target))
+        hideFullscreenButtonCalendar();
+    });
+    fullscreenBtnCalendar.addEventListener('click', ()=>{
+      toggleFullscreenCalendar();
+      hideFullscreenButtonCalendar();
+    });
+
+    /* Generate full year 2025 */
+    const danishDaysCalendar = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'],
+          danishMonthsCalendar = ['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December'];
+    const startDateCalendar = 1, startMonthCalendar = 0, endMonthCalendar = 11, yearCalendar = 2025;
+    const canvasKeysCalendar = [];
+    let totalDaysCalendar = 0;
+    for(let m = startMonthCalendar; m <= endMonthCalendar; m++){
+      const dm = new Date(yearCalendar, m+1, 0).getDate(),
+            sd = (m === startMonthCalendar ? startDateCalendar : 1);
+      for(let d = sd; d <= dm; d++){
+        canvasKeysCalendar.push(`canvas${yearCalendar}${(m+1).toString().padStart(2,'0')}${d.toString().padStart(2,'0')}`);
+        totalDaysCalendar++;
+      }
+    }
+    let currentCanvasIndexCalendar = 0;
+    const hoverSoundCalendar = new Audio('Hover.wav'),
+          clickSoundCalendar = new Audio('click.mp3');
+    function updateEditorCalendar(){
+      let cDay = startDateCalendar, cMonth = startMonthCalendar;
+      for(let i = 0; i < currentCanvasIndexCalendar; i++){
+        cDay++;
+        if(cDay > new Date(yearCalendar, cMonth+1, 0).getDate()){
+          cDay = 1;
+          cMonth++;
         }
       }
-      displayCongratulatoryMessageCalendar();
-      if(e.currentTarget.classList.contains('block-tasks'))checkWorkBlockCompletion(e.currentTarget.parentNode);
+      const date = new Date(yearCalendar, cMonth, cDay);
+      dayNameElementCalendar.innerText = danishDaysCalendar[date.getDay()];
+      dateElementCalendar.innerText = cDay;
+      monthNameElementCalendar.innerText = danishMonthsCalendar[cMonth];
+      loadDataFromFirebase();
     }
-    saveCurrentCanvasCalendar();
-  }
-}
-function checkWorkBlockCompletion(b){
-  const tasks=b.querySelectorAll('.block-tasks .clickable'),
-        done=b.querySelectorAll('.block-tasks .clickable.completed'),
-        title=b.querySelector('.block-title');
-  if(tasks.length>0 && tasks.length===done.length){
-    title.classList.add('completed');b.classList.add('completed');
-  } else {
-    title.classList.remove('completed');b.classList.remove('completed');
-  }
-}
-const workBlockElements={
-  title1:document.querySelector('.work-block[data-block-index="1"] .block-title'),
-  title2:document.querySelector('.work-block[data-block-index="2"] .block-title'),
-  title3:document.querySelector('.work-block[data-block-index="3"] .block-title'),
-  block1:document.querySelector('.work-block[data-block-index="1"] .block-tasks'),
-  block2:document.querySelector('.work-block[data-block-index="2"] .block-tasks'),
-  block3:document.querySelector('.work-block[data-block-index="3"] .block-tasks'),
-  blocks:{
-    block1:document.querySelector('.work-block[data-block-index="1"] .block-tasks'),
-    block2:document.querySelector('.work-block[data-block-index="2"] .block-tasks'),
-    block3:document.querySelector('.work-block[data-block-index="3"] .block-tasks')
-  }
-};
-[editorCalendar,...Object.values(workBlockElements.blocks)].forEach(e=>{
-  e.addEventListener('keyup',handleKeyUp);
-  e.addEventListener('click',handleClick);
-});
-dateElementCalendar.addEventListener('click',showPreviousCanvasCalendar);
-dayNameElementCalendar.addEventListener('click',showNextCanvasCalendar);
-document.addEventListener('keydown',e=>{
-  if(e.key==='ArrowLeft')showPreviousCanvasCalendar();
-  else if(e.key==='ArrowRight')showNextCanvasCalendar();
-});
-setCurrentCanvasIndexCalendar();updateEditorCalendar();
-let greetingsCalendar={morning:[],afternoon:[],evening:[]},congratulatoryMessagesCalendar=[];
-fetch('messages.json').then(r=>r.json()).then(d=>{
-  greetingsCalendar=d.greetings;congratulatoryMessagesCalendar=d.congratulations;selectGreetingCalendar();
-}).catch(e=>{
-  greetingsCalendar.morning=["Morning, Mr. M!","Good morning, Mr. M!"];
-  greetingsCalendar.afternoon=["Good afternoon, Mr. M!","Hey Mr. M!"];
-  greetingsCalendar.evening=["Good evening, Mr. M!","Hey Mr. M!"];
-  selectGreetingCalendar();
-});
-
-/* TIMER + PANDURO */
-const knobTimer=document.querySelector('#timer-view .knob'),
-      displayTimer=document.querySelector('#timer-view .display'),
-      modeNameTimer=document.querySelector('#timer-view .mode-name'),
-      progressRingTimer=document.querySelector('#timer-view .progress'),
-      modeIndicatorsTimer=document.querySelectorAll('#timer-view .mode-indicator'),
-      containerTimer=document.querySelector('#timer-view .timer-container'),
-      canvasTimer=document.querySelector('#timer-view .connecting-circle'),
-      ctxTimer=canvasTimer.getContext('2d');
-const hoverSoundTimer=new Audio('Hover.wav'),
-      clickSoundTimer2=new Audio('click.mp3'),
-      alarmSoundTimer=new Audio('1.mp3');
-let angleTimer=0,isDraggingTimer=false,startAngleTimer=0,
-    currentModeTimer=0,timerDurationTimer=0,timerIntervalTimer,
-    modeChangeTimeoutTimer,animationFrameTimer,isKnobMovedTimer=false,
-    audioUnlockedTimer=false;
-const modesTimer=['Pomodoro','Panduro','Break','SoMe'],
-      maxDurationsTimer=[1500,2700,300,420];
-function setRotationTimer(d){
-  knobTimer.style.transform=`rotate(${d}deg) translate(120px) rotate(-${d}deg)`;
-}
-function setProgressTimer(p){
-  const c=2*Math.PI*45,o=c-(p/100)*c;
-  progressRingTimer.style.strokeDasharray=`${c} ${c}`;
-  progressRingTimer.style.strokeDashoffset=o;
-}
-function formatTimeTimer(s){
-  const m=Math.floor(s/60),ss=s%60;
-  return`${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
-}
-function updateTimerTimer(){
-  timerDurationTimer--;
-  if(timerDurationTimer<=0){
-    clearInterval(timerIntervalTimer);
-    cancelAnimationFrame(animationFrameTimer);
-    playAlarmTimer();return;
-  }
-  displayTimer.textContent=formatTimeTimer(timerDurationTimer);
-  setProgressTimer((1-timerDurationTimer/maxDurationsTimer[currentModeTimer])*100);
-}
-function startTimerTimer(){
-  clearInterval(timerIntervalTimer);cancelAnimationFrame(animationFrameTimer);
-  timerDurationTimer=maxDurationsTimer[currentModeTimer];
-  displayTimer.textContent=formatTimeTimer(timerDurationTimer);
-  setProgressTimer(0);
-  timerIntervalTimer=setInterval(updateTimerTimer,1000);
-  animateConnectingCircleTimer();clickSoundTimer2.play();
-}
-function playAlarmTimer(){
-  let alarmCount=0;const maxAlarms=5;
-  function playAlarmSoundTimer(){
-    if(alarmCount<maxAlarms){
-      const pp=alarmSoundTimer.play();
-      if(pp!==undefined){
-        pp.then(()=>{
-          alarmCount++;
-          setTimeout(playAlarmSoundTimer,alarmSoundTimer.duration*1000);
-        }).catch(e=>{});
+    function setCurrentCanvasIndexCalendar(){
+      const t = new Date();
+      if(t >= new Date(yearCalendar, startMonthCalendar, startDateCalendar) &&
+         t <= new Date(yearCalendar, endMonthCalendar+1, 0)){
+        const diff = Math.floor((t - (new Date(yearCalendar, startMonthCalendar, startDateCalendar))) / (1000*60*60*24));
+        currentCanvasIndexCalendar = Math.min(diff, totalDaysCalendar-1);
       } else {
-        alarmCount++;setTimeout(playAlarmSoundTimer,1000);
+        currentCanvasIndexCalendar = 0;
       }
-    } else {
-      updateCurrentTimeTimer();
-      document.getElementById('panduroFocusWarning').style.display='none';
-      if(modesTimer[currentModeTimer]==='Panduro')incrementPanduroCounter();
     }
-  }
-  playAlarmSoundTimer();
-}
-function showModeNameTimer(){
-  modeNameTimer.textContent=modesTimer[currentModeTimer];
-  modeNameTimer.style.opacity='1';
-  displayTimer.style.opacity='0';
-}
-function hideModeNameTimer(){
-  modeNameTimer.style.opacity='0';
-  displayTimer.style.opacity='1';
-}
-function updateCurrentTimeTimer(){
-  if(!isKnobMovedTimer){
-    const now=new Date(),
-          h=now.getHours().toString().padStart(2,'0'),
-          m=now.getMinutes().toString().padStart(2,'0');
-    displayTimer.textContent=`${h}:${m}`;
-  }
-}
-function unlockAudioTimer(){
-  if(!audioUnlockedTimer){
-    const sa=new Audio();sa.muted=true;const pp=sa.play();
-    if(pp!==undefined){
-      pp.then(()=>{audioUnlockedTimer=true;sa.pause();sa.src=''}).catch(e=>{});
+    function showPreviousCanvasCalendar(){
+      saveCurrentCanvasCalendar();
+      currentCanvasIndexCalendar = (currentCanvasIndexCalendar === 0 ? canvasKeysCalendar.length-1 : currentCanvasIndexCalendar-1);
+      hoverSoundCalendar.play();
+      updateEditorCalendar();
     }
-  }
-}
-function startDragTimer(e){
-  isDraggingTimer=true;isKnobMovedTimer=true;
-  const r=containerTimer.getBoundingClientRect(),
-        cx=r.left+r.width/2,cy=r.top+r.height/2,
-        ex=e.touches?e.touches[0].clientX:e.clientX,
-        ey=e.touches?e.touches[0].clientY:e.clientY;
-  startAngleTimer=Math.atan2(ey-cy,ex-cx);
-  clearTimeout(modeChangeTimeoutTimer);
-  hoverSoundTimer.play();unlockAudioTimer();
-}
-function dragTimer(e){
-  if(!isDraggingTimer)return;
-  const r=containerTimer.getBoundingClientRect(),
-        cx=r.left+r.width/2,cy=r.top+r.height/2,
-        ex=e.touches?e.touches[0].clientX:e.clientX,
-        ey=e.touches?e.touches[0].clientY:e.clientY;
-  const ca=Math.atan2(ey-cy,ex-cx);
-  let da=(ca-startAngleTimer)*(180/Math.PI);
-  if(da>180)da-=360;if(da<-180)da+=360;
-  angleTimer=(angleTimer+da+360)%360;
-  setRotationTimer(angleTimer);startAngleTimer=ca;
-  const nm=Math.floor(angleTimer/90)%modesTimer.length;
-  if(nm!==currentModeTimer){
-    currentModeTimer=nm;
-    modeIndicatorsTimer.forEach((ind,i)=>ind.classList.toggle('active',i===currentModeTimer));
-    showModeNameTimer();
-    timerDurationTimer=maxDurationsTimer[currentModeTimer];
-    displayTimer.textContent=formatTimeTimer(timerDurationTimer);
+    function showNextCanvasCalendar(){
+      saveCurrentCanvasCalendar();
+      currentCanvasIndexCalendar = (currentCanvasIndexCalendar === canvasKeysCalendar.length-1 ? 0 : currentCanvasIndexCalendar+1);
+      hoverSoundCalendar.play();
+      updateEditorCalendar();
+    }
+    let messageTimeoutCalendar;
+    function openChat(){ window.open('https://huggingface.co/chat/', '_blank'); }
+    function selectGreetingCalendar(){
+      const h = (new Date()).getHours();
+      let msg = "";
+      if(h >= 5 && h < 12)
+        msg = getRandomMessageCalendar(greetingsCalendar.morning);
+      else if(h >= 12 && h < 18)
+        msg = getRandomMessageCalendar(greetingsCalendar.afternoon);
+      else
+        msg = getRandomMessageCalendar(greetingsCalendar.evening);
+      greetingMessageElementCalendar.innerText = msg;
+      greetingMessageElementCalendar.classList.remove('hidden');
+    }
+    function getRandomMessageCalendar(a){ if(a.length===0)return ""; return a[Math.floor(Math.random()*a.length)]; }
+    function displayCongratulatoryMessageCalendar(){
+      if(congratulatoryMessagesCalendar.length === 0) return;
+      const m = congratulatoryMessagesCalendar[Math.floor(Math.random()*congratulatoryMessagesCalendar.length)],
+            full = `${m.icon} ${m.text}`;
+      if(messageTimeoutCalendar){ clearTimeout(messageTimeoutCalendar); messageTimeoutCalendar = null; }
+      greetingMessageElementCalendar.innerText = full;
+      greetingMessageElementCalendar.classList.remove('hidden');
+      messageTimeoutCalendar = setTimeout(()=>{
+        greetingMessageElementCalendar.classList.add('hidden');
+        setTimeout(()=>{ selectGreetingCalendar(); }, 500);
+      },20000);
+    }
+    function showConfetti(){
+      const c = document.createElement('canvas');
+      c.style.position = 'fixed';
+      c.style.top = 0;
+      c.style.left = 0;
+      c.style.width = '100%';
+      c.style.height = '100%';
+      c.style.pointerEvents = 'none';
+      document.body.appendChild(c);
+      const ctx = c.getContext('2d'),
+            w = window.innerWidth,
+            h = window.innerHeight;
+      c.width = w;
+      c.height = h;
+      const confettiCount = 80;
+      let particles = [];
+      for(let i = 0; i < confettiCount; i++){
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * -h,
+          r: Math.random() * 6 + 4,
+          vx: (Math.random()-0.5)*4,
+          vy: Math.random()*3+2,
+          color: 'hsl(' + Math.random()*360 + ',100%,50%)',
+          opacity: 1,
+          tiltAngle: Math.random() * Math.PI
+        });
+      }
+      function draw(){
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p=>{
+          ctx.save();
+          ctx.beginPath();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.tiltAngle);
+          ctx.globalAlpha = p.opacity;
+          ctx.arc(0, 0, p.r, 0, 2*Math.PI);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          ctx.restore();
+        });
+        update();
+      }
+      function update(){
+        particles.forEach(p=>{
+          p.x += p.vx;
+          p.y += p.vy;
+          p.opacity -= 0.01;
+          p.tiltAngle += 0.05 * (Math.random()*0.1 + 0.05);
+          if(p.opacity <= 0){
+            p.x = Math.random() * w;
+            p.y = Math.random() * -50;
+            p.opacity = 1;
+          }
+        });
+      }
+      let animationId;
+      function loop(){ draw(); animationId = requestAnimationFrame(loop); }
+      loop();
+      setTimeout(()=>{
+        cancelAnimationFrame(animationId);
+        document.body.removeChild(c);
+      }, 3000);
+    }
+
+    /* Handle tasks in editor */
+    function handleSpecialCharacterConversion(e, char){
+      const s = window.getSelection();
+      if(!s.rangeCount)return;
+      const r = s.getRangeAt(0), n = r.startContainer;
+      if(n.nodeType !== Node.TEXT_NODE)return;
+      const t = n.textContent, i = t.lastIndexOf(char);
+      if(i === t.length - 1){
+        const b = t.slice(0, i).trim();
+        if(b.length === 0)return;
+        const span = document.createElement('span');
+        span.classList.add('clickable');
+        if(char==='!') span.classList.add('need-to-do');
+        span.textContent = b;
+        n.parentNode.replaceChild(span, n);
+        const br = document.createElement('br');
+        span.parentNode.insertBefore(br, span.nextSibling);
+        const newRange = document.createRange();
+        newRange.setStartAfter(br);
+        newRange.collapse(true);
+        s.removeAllRanges();
+        s.addRange(newRange);
+        saveCurrentCanvasCalendar();
+      }
+    }
+    function handleKeyUp(e){
+      if(e.key==='.' || e.key==='!') handleSpecialCharacterConversion(e.currentTarget, e.key);
+    }
+    function handleClick(e){
+      if(e.target.classList.contains('clickable')){
+        if(e.target.classList.contains('completed')){
+          e.target.classList.remove('completed');
+          if(e.target.classList.contains('need-to-do')) e.target.style.animation = '';
+        } else {
+          e.target.classList.add('completed');
+          clickSoundCalendar.play();
+          e.target.style.animation = 'none';
+          if(e.target.id==='daily-frog'){
+            if(!e.target.dataset.added){ 
+              e.target.dataset.added="true"; 
+            } else {
+              showConfetti();
+            }
+          }
+          displayCongratulatoryMessageCalendar();
+          if(e.currentTarget.classList.contains('block-tasks')) checkWorkBlockCompletion(e.currentTarget.parentNode);
+        }
+        saveCurrentCanvasCalendar();
+      }
+    }
+    function checkWorkBlockCompletion(b){
+      const tasks = b.querySelectorAll('.block-tasks .clickable'),
+            done = b.querySelectorAll('.block-tasks .clickable.completed'),
+            title = b.querySelector('.block-title');
+      if(tasks.length > 0 && tasks.length === done.length){
+        title.classList.add('completed');
+        b.classList.add('completed');
+      } else {
+        title.classList.remove('completed');
+        b.classList.remove('completed');
+      }
+    }
+    const workBlockElements = {
+      title1: document.querySelector('.work-block[data-block-index="1"] .block-title'),
+      title2: document.querySelector('.work-block[data-block-index="2"] .block-title'),
+      title3: document.querySelector('.work-block[data-block-index="3"] .block-title'),
+      block1: document.querySelector('.work-block[data-block-index="1"] .block-tasks'),
+      block2: document.querySelector('.work-block[data-block-index="2"] .block-tasks'),
+      block3: document.querySelector('.work-block[data-block-index="3"] .block-tasks'),
+      blocks: {
+        block1: document.querySelector('.work-block[data-block-index="1"] .block-tasks'),
+        block2: document.querySelector('.work-block[data-block-index="2"] .block-tasks'),
+        block3: document.querySelector('.work-block[data-block-index="3"] .block-tasks')
+      }
+    };
+    [editorCalendar, ...Object.values(workBlockElements.blocks)].forEach(e=>{
+      e.addEventListener('keyup', handleKeyUp);
+      e.addEventListener('click', handleClick);
+    });
+    dateElementCalendar.addEventListener('click', showPreviousCanvasCalendar);
+    dayNameElementCalendar.addEventListener('click', showNextCanvasCalendar);
+    document.addEventListener('keydown', e=>{
+      if(e.key==='ArrowLeft') showPreviousCanvasCalendar();
+      else if(e.key==='ArrowRight') showNextCanvasCalendar();
+    });
+    setCurrentCanvasIndexCalendar();
+    updateEditorCalendar();
+    let greetingsCalendar = { morning: [], afternoon: [], evening: [] },
+        congratulatoryMessagesCalendar = [];
+    fetch('messages.json').then(r=>r.json()).then(d=>{
+      greetingsCalendar = d.greetings;
+      congratulatoryMessagesCalendar = d.congratulations;
+      selectGreetingCalendar();
+    }).catch(e=>{
+      greetingsCalendar.morning = ["Morning, Mr. M!", "Good morning, Mr. M!"];
+      greetingsCalendar.afternoon = ["Good afternoon, Mr. M!", "Hey Mr. M!"];
+      greetingsCalendar.evening = ["Good evening, Mr. M!", "Hey Mr. M!"];
+      selectGreetingCalendar();
+    });
+
+    /* TIMER + OPDATERET FUNKTIONALITET */
+    // Ændrede modes: 
+    // Index 0: Deep Work (90 min) – viser "Work in progress, stay focused"
+    // Index 1: Break (7 min)
+    // Index 2: Pause (stopper uret)
+    // Index 3: Pomodoro (25 min) – efter afslutning af session startes automatisk en pause (5 min, eller 30 min efter 4 cyklusser)
+    const modesTimer = ['Deep Work', 'Break', 'Pause', 'Pomodoro'];
+    const maxDurationsTimer = [5400, 420, 0, 1500];
+    // Variabler til Pomodoro logik:
+    let pomodoroCycleCount = 0;
+    let inPomodoroBreak = false;
+
+    const knobTimer = document.querySelector('#timer-view .knob'),
+          displayTimer = document.querySelector('#timer-view .display'),
+          modeNameTimer = document.querySelector('#timer-view .mode-name'),
+          progressRingTimer = document.querySelector('#timer-view .progress'),
+          modeIndicatorsTimer = document.querySelectorAll('#timer-view .mode-indicator'),
+          containerTimer = document.querySelector('#timer-view .timer-container'),
+          canvasTimer = document.querySelector('#timer-view .connecting-circle'),
+          ctxTimer = canvasTimer.getContext('2d');
+    const hoverSoundTimer = new Audio('Hover.wav'),
+          clickSoundTimer2 = new Audio('click.mp3'),
+          alarmSoundTimer = new Audio('1.mp3');
+    let angleTimer = 0, isDraggingTimer = false, startAngleTimer = 0,
+        currentModeTimer = 0, timerDurationTimer = 0, timerIntervalTimer,
+        modeChangeTimeoutTimer, animationFrameTimer, isKnobMovedTimer = false,
+        audioUnlockedTimer = false;
+    
+    // Når brugeren drejer knappen, bestemmes mode ud fra kvadranterne
+    function setRotationTimer(d){
+      knobTimer.style.transform = `rotate(${d}deg) translate(120px) rotate(-${d}deg)`;
+    }
+    function setProgressTimer(p){
+      const c = 2 * Math.PI * 45,
+            o = c - (p/100)*c;
+      progressRingTimer.style.strokeDasharray = `${c} ${c}`;
+      progressRingTimer.style.strokeDashoffset = o;
+    }
+    function formatTimeTimer(s){
+      const m = Math.floor(s/60), ss = s % 60;
+      return `${m.toString().padStart(2,'0')}:${ss.toString().padStart(2,'0')}`;
+    }
+    function updateTimerTimer(){
+      timerDurationTimer--;
+      if(timerDurationTimer <= 0){
+        clearInterval(timerIntervalTimer);
+        cancelAnimationFrame(animationFrameTimer);
+        playAlarmTimer();
+        return;
+      }
+      displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+      setProgressTimer((1 - timerDurationTimer / maxDurationsTimer[currentModeTimer]) * 100);
+    }
+    function startTimerTimer(){
+      clearInterval(timerIntervalTimer);
+      cancelAnimationFrame(animationFrameTimer);
+      timerDurationTimer = maxDurationsTimer[currentModeTimer];
+      displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+      setProgressTimer(0);
+      timerIntervalTimer = setInterval(updateTimerTimer, 1000);
+      animateConnectingCircleTimer();
+      clickSoundTimer2.play();
+    }
+    function playAlarmTimer(){
+      let alarmCount = 0;
+      const maxAlarms = 5;
+      function playAlarmSoundTimer(){
+        if(alarmCount < maxAlarms){
+          const pp = alarmSoundTimer.play();
+          if(pp !== undefined){
+            pp.then(()=>{
+              alarmCount++;
+              setTimeout(playAlarmSoundTimer, alarmSoundTimer.duration * 1000);
+            }).catch(e=>{});
+          } else {
+            alarmCount++;
+            setTimeout(playAlarmSoundTimer, 1000);
+          }
+        } else {
+          if(modesTimer[currentModeTimer] === "Pomodoro" && !inPomodoroBreak){
+            // Pomodoro-session afsluttet – start automatisk pause
+            incrementSessionCounter();
+            pomodoroCycleCount++;
+            let breakDuration = (pomodoroCycleCount < 4) ? 300 : 1800;
+            if(pomodoroCycleCount >= 4) { pomodoroCycleCount = 0; }
+            inPomodoroBreak = true;
+            modeNameTimer.textContent = "Pomodoro Break";
+            timerDurationTimer = breakDuration;
+            displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+            setProgressTimer(0);
+            timerIntervalTimer = setInterval(updateTimerTimer, 1000);
+            animateConnectingCircleTimer();
+          } else if(inPomodoroBreak){
+            // Pomodoro pause afsluttet
+            inPomodoroBreak = false;
+            updateCurrentTimeTimer();
+          } else if(modesTimer[currentModeTimer] === "Deep Work"){
+            incrementSessionCounter();
+            updateCurrentTimeTimer();
+          } else {
+            updateCurrentTimeTimer();
+          }
+        }
+      }
+      playAlarmSoundTimer();
+    }
+    function showModeNameTimer(){
+      modeNameTimer.textContent = modesTimer[currentModeTimer];
+      modeNameTimer.style.opacity = '1';
+      displayTimer.style.opacity = '0';
+    }
+    function hideModeNameTimer(){
+      modeNameTimer.style.opacity = '0';
+      displayTimer.style.opacity = '1';
+    }
+    function updateCurrentTimeTimer(){
+      if(!isKnobMovedTimer){
+        const now = new Date(),
+              h = now.getHours().toString().padStart(2,'0'),
+              m = now.getMinutes().toString().padStart(2,'0');
+        displayTimer.textContent = `${h}:${m}`;
+      }
+    }
+    function unlockAudioTimer(){
+      if(!audioUnlockedTimer){
+        const sa = new Audio();
+        sa.muted = true;
+        const pp = sa.play();
+        if(pp !== undefined){
+          pp.then(()=>{
+            audioUnlockedTimer = true;
+            sa.pause();
+            sa.src = '';
+          }).catch(e=>{});
+        }
+      }
+    }
+    function startDragTimer(e){
+      isDraggingTimer = true;
+      isKnobMovedTimer = true;
+      const r = containerTimer.getBoundingClientRect(),
+            cx = r.left + r.width/2,
+            cy = r.top + r.height/2,
+            ex = e.touches ? e.touches[0].clientX : e.clientX,
+            ey = e.touches ? e.touches[0].clientY : e.clientY;
+      startAngleTimer = Math.atan2(ey - cy, ex - cx);
+      clearTimeout(modeChangeTimeoutTimer);
+      hoverSoundTimer.play();
+      unlockAudioTimer();
+    }
+    function dragTimer(e){
+      if(!isDraggingTimer) return;
+      const r = containerTimer.getBoundingClientRect(),
+            cx = r.left + r.width/2,
+            cy = r.top + r.height/2,
+            ex = e.touches ? e.touches[0].clientX : e.clientX,
+            ey = e.touches ? e.touches[0].clientY : e.clientY;
+      const ca = Math.atan2(ey - cy, ex - cx);
+      let da = (ca - startAngleTimer) * (180/Math.PI);
+      if(da > 180) da -= 360;
+      if(da < -180) da += 360;
+      angleTimer = (angleTimer + da + 360) % 360;
+      setRotationTimer(angleTimer);
+      startAngleTimer = ca;
+      const nm = Math.floor(angleTimer / 90) % modesTimer.length;
+      if(nm !== currentModeTimer){
+        currentModeTimer = nm;
+        modeIndicatorsTimer.forEach((ind, i) => ind.classList.toggle('active', i === currentModeTimer));
+        showModeNameTimer();
+        timerDurationTimer = maxDurationsTimer[currentModeTimer];
+        displayTimer.textContent = formatTimeTimer(timerDurationTimer);
+        setProgressTimer(0);
+        if(modesTimer[currentModeTimer] === 'Deep Work'){
+          const warning = document.getElementById('panduroFocusWarning');
+          warning.style.display = 'block';
+          warning.textContent = "Work in progress, stay focused.";
+        } else {
+          document.getElementById('panduroFocusWarning').style.display = 'none';
+        }
+      }
+    }
+    function endDragTimer(){
+      if(isDraggingTimer){
+        isDraggingTimer = false;
+        if(modesTimer[currentModeTimer] === "Pause"){
+          modeNameTimer.textContent = "Paused";
+          modeNameTimer.style.opacity = '1';
+          clickSoundTimer2.play();
+          return;
+        }
+        modeChangeTimeoutTimer = setTimeout(()=>{
+          hideModeNameTimer();
+          startTimerTimer();
+        }, 2000);
+        clickSoundTimer2.play();
+      }
+    }
+    function animateConnectingCircleTimer(){
+      ctxTimer.clearRect(0, 0, canvasTimer.width, canvasTimer.height);
+      ctxTimer.save();
+      ctxTimer.translate(canvasTimer.width/2, canvasTimer.height/2);
+      const time = Date.now() * 0.0005, radius = 135;
+      ctxTimer.beginPath();
+      for(let i = 0; i < 36; i++){
+        const ad = i * 10 * (Math.PI/180),
+              x = radius * Math.cos(ad),
+              y = radius * Math.sin(ad),
+              na = ad + time * 1.44,
+              nx = radius * Math.cos(na),
+              ny = radius * Math.sin(na);
+        ctxTimer.moveTo(x, y);
+        ctxTimer.lineTo(nx, ny);
+        ctxTimer.strokeStyle = `rgba(255,255,255,${0.1 + 0.2 * Math.sin(time + i * 0.2)})`;
+        ctxTimer.lineWidth = 1.5;
+        ctxTimer.stroke();
+      }
+      ctxTimer.restore();
+      animationFrameTimer = requestAnimationFrame(animateConnectingCircleTimer);
+    }
+    containerTimer.addEventListener('mousedown', startDragTimer);
+    containerTimer.addEventListener('touchstart', startDragTimer);
+    document.addEventListener('mousemove', dragTimer);
+    document.addEventListener('touchmove', dragTimer);
+    document.addEventListener('mouseup', endDragTimer);
+    document.addEventListener('touchend', endDragTimer);
+    setRotationTimer(0);
     setProgressTimer(0);
-    if(modesTimer[currentModeTimer]==='Panduro'){
-      document.getElementById('panduroFocusWarning').style.display='block';
-    } else {
-      document.getElementById('panduroFocusWarning').style.display='none';
+    timerDurationTimer = maxDurationsTimer[currentModeTimer];
+    updateCurrentTimeTimer();
+    setInterval(updateCurrentTimeTimer, 1000);
+
+    /* Session Counter - Øges med 1 hver gang en Pomodoro- eller Deep Work-session afsluttes */
+    let panduroCount = 0;
+    const panduroCounter = document.getElementById('panduroCounter');
+    function loadPanduroCounter(){
+      const d = new Date(), key = 'panduro_' + d.toDateString();
+      const c = localStorage.getItem(key);
+      panduroCount = c ? parseInt(c) : 0;
+      panduroCounter.textContent = panduroCount + '/7';
     }
-  }
-}
-function endDragTimer(){
-  if(isDraggingTimer){
-    isDraggingTimer=false;
-    modeChangeTimeoutTimer=setTimeout(()=>{
-      hideModeNameTimer();startTimerTimer();
-    },2000);
-    clickSoundTimer2.play();
-  }
-}
-function animateConnectingCircleTimer(){
-  ctxTimer.clearRect(0,0,canvasTimer.width,canvasTimer.height);
-  ctxTimer.save();
-  ctxTimer.translate(canvasTimer.width/2,canvasTimer.height/2);
-  const time=Date.now()*0.0005,radius=135;
-  ctxTimer.beginPath();
-  for(let i=0;i<36;i++){
-    const ad=i*10*(Math.PI/180),
-          x=radius*Math.cos(ad),
-          y=radius*Math.sin(ad),
-          na=ad+time*1.44,
-          nx=radius*Math.cos(na),
-          ny=radius*Math.sin(na);
-    ctxTimer.moveTo(x,y);ctxTimer.lineTo(nx,ny);
-    ctxTimer.strokeStyle=`rgba(255,255,255,${0.1+0.2*Math.sin(time+i*0.2)})`;
-    ctxTimer.lineWidth=1.5;ctxTimer.stroke();
-  }
-  ctxTimer.restore();
-  animationFrameTimer=requestAnimationFrame(animateConnectingCircleTimer);
-}
-containerTimer.addEventListener('mousedown',startDragTimer);
-containerTimer.addEventListener('touchstart',startDragTimer);
-document.addEventListener('mousemove',dragTimer);
-document.addEventListener('touchmove',dragTimer);
-document.addEventListener('mouseup',endDragTimer);
-document.addEventListener('touchend',endDragTimer);
-setRotationTimer(0);setProgressTimer(0);
-timerDurationTimer=maxDurationsTimer[currentModeTimer];
-updateCurrentTimeTimer();setInterval(updateCurrentTimeTimer,1000);
-
-/* Panduro session counter logic */
-let panduroCount=0;const panduroCounter=document.getElementById('panduroCounter');
-function loadPanduroCounter(){
-  const d=new Date(),key='panduro_'+d.toDateString();
-  const c=localStorage.getItem(key);
-  panduroCount=c?parseInt(c):0;
-  panduroCounter.textContent=panduroCount+'/7';
-}
-function savePanduroCounter(){
-  const d=new Date(),key='panduro_'+d.toDateString();
-  localStorage.setItem(key,panduroCount);
-}
-function incrementPanduroCounter(){
-  // Only increment if not Sunday, for example. Adjust if needed.
-  panduroCount++;
-  panduroCounter.textContent=panduroCount+'/7';
-  savePanduroCounter();
-}
-loadPanduroCounter();
-
-/* Nature Audio Toggle (track1,2,3) */
-const natureTracks=["track1.mp3","track2.mp3","track3.mp3"];
-let trackIndex=0,isPlaying=false;
-const audioElement=new Audio();
-audioElement.loop=true;
-document.getElementById('audioToggleButton').addEventListener('click',()=>{
-  if(!isPlaying){
-    audioElement.src=natureTracks[trackIndex];
-    audioElement.play();isPlaying=true;
-  } else {
-    trackIndex++;
-    if(trackIndex<natureTracks.length){
-      audioElement.src=natureTracks[trackIndex];
-      audioElement.play();
-    } else {
-      audioElement.pause();audioElement.src="";
-      trackIndex=0;isPlaying=false;
+    function savePanduroCounter(){
+      const d = new Date(), key = 'panduro_' + d.toDateString();
+      localStorage.setItem(key, panduroCount);
     }
-  }
-});
+    function incrementSessionCounter(){
+      panduroCount++;
+      panduroCounter.textContent = panduroCount + '/7';
+      savePanduroCounter();
+    }
+    loadPanduroCounter();
 
-/* TEXT COPIER + SETTINGS */
-const textRef=database.ref('sharedText'),
-      textArea=document.getElementById('textInput');
-document.getElementById('loginButton').addEventListener('click',()=>{
-  const p=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(p).then(r=>{
-    alert(`Velkommen, ${r.user.displayName}!`);
-  }).catch(e=>{
-    alert("Login fejlede: "+e.message);
-  });
-});
-textRef.on('value',s=>{
-  textArea.value=s.val()||'';
-});
-textArea.addEventListener('input',()=>{
-  textRef.set(textArea.value);
-});
-function copyText(){
-  textArea.select();document.execCommand('copy');
-  document.getElementById('status').innerText="Tekst kopieret!";
-  setTimeout(()=>{document.getElementById('status').innerText=""},2000);
-}
-const settingsButton=document.getElementById('settingsButton'),
-      settingsMenu=document.getElementById('settingsMenu'),
-      loginButton=document.getElementById('loginButton'),
-      toggleLoginButton=document.getElementById('toggleLoginButton'),
-      fullscreenButton2=document.getElementById('fullscreenButton');
-settingsButton.addEventListener('click',()=>{
-  settingsMenu.classList.toggle('active');
-});
-toggleLoginButton.addEventListener('click',()=>{
-  if(loginButton.style.display==='none'){
-    loginButton.style.display='block';
-    toggleLoginButton.textContent='Skjul Log ind';
-  } else {
-    loginButton.style.display='none';
-    toggleLoginButton.textContent='Vis Log ind';
-  }
-});
-fullscreenButton2.addEventListener('click',()=>{
-  if(!document.fullscreenElement)document.documentElement.requestFullscreen();
-  else document.exitFullscreen();
-});
+    /* Nature Audio Toggle */
+    const natureTracks = ["track1.mp3", "track2.mp3", "track3.mp3"];
+    let trackIndex = 0, isPlaying = false;
+    const audioElement = new Audio();
+    audioElement.loop = true;
+    document.getElementById('audioToggleButton').addEventListener('click', ()=>{
+      if(!isPlaying){
+        audioElement.src = natureTracks[trackIndex];
+        audioElement.play();
+        isPlaying = true;
+      } else {
+        trackIndex++;
+        if(trackIndex < natureTracks.length){
+          audioElement.src = natureTracks[trackIndex];
+          audioElement.play();
+        } else {
+          audioElement.pause();
+          audioElement.src = "";
+          trackIndex = 0;
+          isPlaying = false;
+        }
+      }
+    });
 
-/* VIEW SWITCHING */
-const btnCalendar=document.getElementById('btn-calendar'),
-      btnTimer=document.getElementById('btn-timer'),
-      btnTextCopier=document.getElementById('btn-text-copier'),
-      calendarView=document.getElementById('calendar-view'),
-      timerView=document.getElementById('timer-view'),
-      textCopierView=document.getElementById('text-copier-view');
-btnCalendar.addEventListener('click',()=>{showView('calendar')});
-btnTimer.addEventListener('click',()=>{showView('timer')});
-btnTextCopier.addEventListener('click',()=>{showView('text-copier')});
-function showView(v){
-  if(v==='calendar'){
-    calendarView.classList.add('active-view');
-    timerView.classList.remove('active-view');
-    textCopierView.classList.remove('active-view');
-    btnCalendar.classList.add('active');
-    btnTimer.classList.remove('active');
-    btnTextCopier.classList.remove('active');
-  } else if(v==='timer'){
-    timerView.classList.add('active-view');
-    calendarView.classList.remove('active-view');
-    textCopierView.classList.remove('active-view');
-    btnTimer.classList.add('active');
-    btnCalendar.classList.remove('active');
-    btnTextCopier.classList.remove('active');
-  } else if(v==='text-copier'){
-    textCopierView.classList.add('active-view');
-    calendarView.classList.remove('active-view');
-    timerView.classList.remove('active-view');
-    btnTextCopier.classList.add('active');
-    btnCalendar.classList.remove('active');
-    btnTimer.classList.remove('active');
-  }
-}
-</script></body></html>
+    /* TEXT COPIER + SETTINGS */
+    const textRef = database.ref('sharedText'),
+          textArea = document.getElementById('textInput');
+    document.getElementById('loginButton').addEventListener('click', ()=>{
+      const p = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(p).then(r=>{
+        alert(`Velkommen, ${r.user.displayName}!`);
+      }).catch(e=>{
+        alert("Login fejlede: " + e.message);
+      });
+    });
+    textRef.on('value', s=>{
+      textArea.value = s.val() || '';
+    });
+    textArea.addEventListener('input', ()=>{
+      textRef.set(textArea.value);
+    });
+    function copyText(){
+      textArea.select();
+      document.execCommand('copy');
+      document.getElementById('status').innerText = "Tekst kopieret!";
+      setTimeout(()=>{
+        document.getElementById('status').innerText = "";
+      }, 2000);
+    }
+    const settingsButton = document.getElementById('settingsButton'),
+          settingsMenu = document.getElementById('settingsMenu'),
+          loginButton = document.getElementById('loginButton'),
+          toggleLoginButton = document.getElementById('toggleLoginButton'),
+          fullscreenButton2 = document.getElementById('fullscreenButton');
+    settingsButton.addEventListener('click', ()=>{
+      settingsMenu.classList.toggle('active');
+    });
+    toggleLoginButton.addEventListener('click', ()=>{
+      if(loginButton.style.display === 'none'){
+        loginButton.style.display = 'block';
+        toggleLoginButton.textContent = 'Skjul Log ind';
+      } else {
+        loginButton.style.display = 'none';
+        toggleLoginButton.textContent = 'Vis Log ind';
+      }
+    });
+    fullscreenButton2.addEventListener('click', ()=>{
+      if(!document.fullscreenElement)
+        document.documentElement.requestFullscreen();
+      else
+        document.exitFullscreen();
+    });
+
+    /* VIEW SWITCHING */
+    const btnCalendar = document.getElementById('btn-calendar'),
+          btnTimer = document.getElementById('btn-timer'),
+          btnTextCopier = document.getElementById('btn-text-copier'),
+          calendarView = document.getElementById('calendar-view'),
+          timerView = document.getElementById('timer-view'),
+          textCopierView = document.getElementById('text-copier-view');
+    btnCalendar.addEventListener('click', ()=>{ showView('calendar') });
+    btnTimer.addEventListener('click', ()=>{ showView('timer') });
+    btnTextCopier.addEventListener('click', ()=>{ showView('text-copier') });
+    function showView(v){
+      if(v==='calendar'){
+        calendarView.classList.add('active-view');
+        timerView.classList.remove('active-view');
+        textCopierView.classList.remove('active-view');
+        btnCalendar.classList.add('active');
+        btnTimer.classList.remove('active');
+        btnTextCopier.classList.remove('active');
+      } else if(v==='timer'){
+        timerView.classList.add('active-view');
+        calendarView.classList.remove('active-view');
+        textCopierView.classList.remove('active-view');
+        btnTimer.classList.add('active');
+        btnCalendar.classList.remove('active');
+        btnTextCopier.classList.remove('active');
+      } else if(v==='text-copier'){
+        textCopierView.classList.add('active-view');
+        calendarView.classList.remove('active-view');
+        timerView.classList.remove('active-view');
+        btnTextCopier.classList.add('active');
+        btnCalendar.classList.remove('active');
+        btnTimer.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>
